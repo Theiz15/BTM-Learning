@@ -1,0 +1,38 @@
+package com.learning.btmlearning.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Table(name = "quizzes")
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Quiz {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String title;
+    private int timeLimitMin;
+    private int passScore;
+    private boolean isAiGenerated;
+    private LocalDateTime createdAt;
+
+    private Boolean shuffleQuestions = false;
+    private Boolean shuffleAnswers = false;
+
+    @OneToOne
+    @JoinColumn(name = "lesson_id")
+    private Lesson lesson;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<QuizQuestion> questions;
+}
