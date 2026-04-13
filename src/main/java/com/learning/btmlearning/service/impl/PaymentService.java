@@ -41,7 +41,6 @@ import java.util.*;
 public class PaymentService {
 
     CourseRepository courseRepository;
-    UserRepository userRepository;
     PaymentRepository paymentRepository;
     EnrollmentRepository enrollmentRepository;
     SecurityUtil securityUtil;

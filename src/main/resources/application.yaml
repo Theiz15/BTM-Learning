@@ -41,7 +41,15 @@ vnpay:
   hash-secret: ${HASH_SECRET}
   pay-url: ${PAY_URL}
   return-url: ${RETURN_URL}
-  api-url: ${API_URL}
+  api-url: ${API_URL_VNPAY}
+
+openai:
+  # Nếu dùng Groq miễn phí, đổi URL thành: https://api.groq.com/openai/v1/chat/completions
+  api-url: ${API_URL_OPEN_AI}
+  api-key: ${API_KEY}
+  model: ${MODEL} # Nếu dùng Groq, đổi thành "llama3-8b-8192"
+  max-tokens: 1000
+  temperature: 0.7
 
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}

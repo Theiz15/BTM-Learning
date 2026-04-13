@@ -1,4 +1,4 @@
-package com.learning.btmlearning.mapper;
+package com.learning.btmlearning.repository;
 
 import com.learning.btmlearning.entity.Category;
 import org.springframework.data.jpa.repository.JpaRepository;

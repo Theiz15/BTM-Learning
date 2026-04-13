@@ -25,7 +25,9 @@ public enum ErrorCode {
     CATEGORY_NOT_FOUND(1009,"Category not found" , HttpStatus.UNAUTHORIZED),
     COURSE_NOT_FOUND(1010,"Course not found" , HttpStatus.UNAUTHORIZED),
     YOU_ARE_NOT_INSTRUCTOR(1011,"You are not instructor" , HttpStatus.UNAUTHORIZED),
-    YOU_ARE_OWN(1012,"You already own this course." , HttpStatus.UNAUTHORIZED)
+    YOU_ARE_OWN(1012,"You already own this course." , HttpStatus.UNAUTHORIZED),
+    AI_SERVER_OVERLOADED(1013,"Ai server overloaded" , HttpStatus.UNAUTHORIZED),
+    TOO_MANY_REQUESTS(1014,"Too many request" , HttpStatus.UNAUTHORIZED)
     ;
 
     ErrorCode(int errorCode, String errorMsg, HttpStatusCode statusCode) {
