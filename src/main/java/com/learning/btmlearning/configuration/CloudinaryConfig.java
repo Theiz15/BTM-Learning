@@ -1,4 +1,4 @@
-package com.restaurant.goldenKitchen.configuration;
+package com.learning.btmlearning.configuration;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;

@@ -1,7 +1,5 @@
 server:
   port: ${SERVER_PORT}
-  servlet:
-    context-path: /api/v1
 
 spring:
   application:
@@ -14,8 +12,38 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${CLIENT_ID}
+
+api:
+  prefix: /api/v1
+jwt:
+  signerKey:  ${JWT_SIGNER_KEY}
+  access-expiration: 900000                 # 15 phút
+  refresh-expiration: 604800000             # 7 ngày
+
+
+vnpay:
+  tmn-code: ${TMN_CODE}
+  hash-secret: ${HASH_SECRET}
+  pay-url: ${PAY_URL}
+  return-url: ${RETURN_URL}
+  api-url: ${API_URL}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}

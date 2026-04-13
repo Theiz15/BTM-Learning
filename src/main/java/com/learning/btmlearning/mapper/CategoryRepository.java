@@ -1,2 +1,9 @@
-package com.learning.btmlearning.mapper;public interface CategoryRepository {
+package com.learning.btmlearning.mapper;
+
+import com.learning.btmlearning.entity.Category;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface CategoryRepository extends JpaRepository<Category, Long> {
 }

@@ -9,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LogoutRequest {
+public class RefreshRequest {
     @NotBlank(message = "Refresh token cannot blank")
     String refreshToken ;
 }

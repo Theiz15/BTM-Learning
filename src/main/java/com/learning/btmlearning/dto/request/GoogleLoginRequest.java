@@ -1,2 +1,14 @@
-package com.learning.btmlearning.dto.request;public class GoogleLoginRequest {
+package com.learning.btmlearning.dto.request;
+
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.experimental.FieldDefaults;
+
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class GoogleLoginRequest {
+    @NotBlank(message = "Google Token cannot blank")
+    String token;
 }

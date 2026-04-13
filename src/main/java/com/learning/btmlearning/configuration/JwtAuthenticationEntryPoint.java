@@ -1,9 +1,8 @@
-package com.thai.identity_service.configuration;
+package com.learning.btmlearning.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.thai.identity_service.dto.request.ApiResponse;
-import com.thai.identity_service.exception.ErrorCode;
-import jakarta.servlet.ServletException;
+import com.learning.btmlearning.dto.response.ApiResponse;
+import com.learning.btmlearning.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -15,7 +14,7 @@ import java.io.IOException;
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
 
         response.setStatus(errorCode.getStatusCode().value());

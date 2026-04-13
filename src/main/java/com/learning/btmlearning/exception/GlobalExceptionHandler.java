@@ -51,6 +51,17 @@ public class GlobalExceptionHandler {
                         .message(errorCode.getErrorMsg())
                         .build()
         );
+    }
 
+    @ExceptionHandler(value = IllegalArgumentException.class)
+    ResponseEntity<ApiResponse> illegalArgumentException(IllegalArgumentException e) {
+        ErrorCode errorCode = ErrorCode.UNAUTHORIZED ;
+
+        return ResponseEntity.status(errorCode.getStatusCode()).body(
+                ApiResponse.builder()
+                        .code(errorCode.getErrorCode())
+                        .message(errorCode.getErrorMsg())
+                        .build()
+        );
     }
 }

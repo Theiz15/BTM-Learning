@@ -1,5 +1,5 @@
 package com.learning.btmlearning.constant;
 
-public enum Level {
+public enum CourseLevel {
     BEGINNER ,INTERMEDIATE ,ADVANCED
 }
