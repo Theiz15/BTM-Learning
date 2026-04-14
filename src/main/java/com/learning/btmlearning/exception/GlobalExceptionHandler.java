@@ -2,6 +2,7 @@ package com.learning.btmlearning.exception;
 
 
 import com.learning.btmlearning.dto.response.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -9,13 +10,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.nio.file.AccessDeniedException;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse> exception(Exception e) {
         ApiResponse apiResponse = new ApiResponse();
-
+        log.error(e.getMessage());
         apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorCode());
         apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorMsg());
         return ResponseEntity.badRequest().body(apiResponse);

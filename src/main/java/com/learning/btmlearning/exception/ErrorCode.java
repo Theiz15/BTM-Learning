@@ -27,7 +27,8 @@ public enum ErrorCode {
     YOU_ARE_NOT_INSTRUCTOR(1011,"You are not instructor" , HttpStatus.UNAUTHORIZED),
     YOU_ARE_OWN(1012,"You already own this course." , HttpStatus.UNAUTHORIZED),
     AI_SERVER_OVERLOADED(1013,"Ai server overloaded" , HttpStatus.UNAUTHORIZED),
-    TOO_MANY_REQUESTS(1014,"Too many request" , HttpStatus.UNAUTHORIZED)
+    TOO_MANY_REQUESTS(1014,"Too many request" , HttpStatus.UNAUTHORIZED),
+    CANNOT_CHANGE_ROLE(1015,"You cannot change role yourself" , HttpStatus.UNAUTHORIZED)
     ;
 
     ErrorCode(int errorCode, String errorMsg, HttpStatusCode statusCode) {

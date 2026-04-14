@@ -3,12 +3,11 @@ package com.learning.btmlearning.mapper;
 import com.learning.btmlearning.dto.response.AiChatMessageResponse;
 import com.learning.btmlearning.entity.AiMessage;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
 import java.util.List;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
+@Mapper(componentModel = "spring")
 public interface AiChatMessageMapper {
 //    @Mapping(target = "role", source = "role.name")
     AiChatMessageResponse toResponse(AiMessage aim);
