@@ -15,8 +15,8 @@ public class GlobalExceptionHandler {
 
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse> exception(Exception e) {
-        ApiResponse apiResponse = new ApiResponse();
+    public ResponseEntity<ApiResponse<?>> exception(Exception e) {
+        ApiResponse<?> apiResponse = new ApiResponse<>();
         log.error(e.getMessage());
         apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorCode());
         apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorMsg());
@@ -33,10 +33,10 @@ public class GlobalExceptionHandler {
 //    }
 
     @ExceptionHandler(AppException.class)
-    ResponseEntity<ApiResponse> appExceptionHandler(AppException e) {
+    ResponseEntity<ApiResponse<?>> appExceptionHandler(AppException e) {
         ErrorCode errorCode = e.getErrorCode();
 
-        ApiResponse apiResponse = new ApiResponse();
+        ApiResponse<?> apiResponse = new ApiResponse<>();
         apiResponse.setCode(errorCode.getErrorCode());
         apiResponse.setMessage(errorCode.getErrorMsg());
         return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse);
@@ -44,7 +44,7 @@ public class GlobalExceptionHandler {
 
 
     @ExceptionHandler(value = AccessDeniedException.class)
-    ResponseEntity<ApiResponse> accessDeniedExceptionHandler(AccessDeniedException e) {
+    ResponseEntity<ApiResponse<?>> accessDeniedExceptionHandler(AccessDeniedException e) {
         ErrorCode errorCode = ErrorCode.UNAUTHORIZED ;
 
         return ResponseEntity.status(errorCode.getStatusCode()).body(
