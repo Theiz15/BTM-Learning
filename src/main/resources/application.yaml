@@ -34,9 +34,9 @@ spring:
           google:
             client-id: ${CLIENT_ID}
 
-api:
-  prefix: /api/v1
-jwt:
+  api:
+    prefix: /api/v1
+  jwt:
   signerKey:  ${JWT_SIGNER_KEY}
   access-expiration: 900000                 # 15 phút
   refresh-expiration: 604800000             # 7 ngày
@@ -57,14 +57,14 @@ openai:
   max-tokens: 1000
   temperature: 0.7
 
-cloudinary:
-  cloud-name: ${CLOUDINARY_CLOUD_NAME}
-  api-key: ${CLOUDINARY_API_KEY}
-  api-secret: ${CLOUDINARY_API_SECRET}
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    api-secret: ${CLOUDINARY_API_SECRET}
+    data:
+      redis:
+        host: ${REDIS_HOST:localhost}
+        port: ${REDIS_PORT:6379}
 api:
   prefix: /api/v1
 jwt:

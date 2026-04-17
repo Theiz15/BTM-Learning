@@ -46,7 +46,7 @@ public class Course {
     @JoinColumn(name = "instructor_id", nullable = false)
     User instructor ;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "category_id")
-//    private Category category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 }
