@@ -50,7 +50,6 @@ public class QuestionServiceImpl implements QuestionService {
         questionMapper.updateQuestion(question, request);
         syncAnswer(question, request.getAnswers());
 
-
         return questionMapper.toQuestionResponse(questionRepository.save(question));
     }
 
@@ -79,11 +78,14 @@ public class QuestionServiceImpl implements QuestionService {
         validateAnswers(question.getQuestionType(), requests);
 
         // Clear all answers before set new answers
-        question.getAnswers().clear();
+        if (question.getAnswers() != null) {
+            question.getAnswers().clear();
+        }
 
         for (AnswerRequest answerRequest : requests) {
             Answer answer = answerMapper.toAnswer(answerRequest);
             answer.setQuestion(question);
+            answer.setReferenceAnswer(answerRequest.getReferenceAnswer());
             question.getAnswers().add(answer);
         }
     }
@@ -92,7 +94,7 @@ public class QuestionServiceImpl implements QuestionService {
         if (type == QuestionType.ESSAY || type == QuestionType.SHORT_ANSWER) return;
 
         long correctCount = requests.stream()
-                .filter(a -> Boolean.TRUE.equals(a.isCorrect()))
+                .filter(AnswerRequest::isCorrect)
                 .count();
 
         boolean checkType = type == QuestionType.SINGLE_CHOICE || type == QuestionType.TRUE_FALSE;
@@ -101,7 +103,7 @@ public class QuestionServiceImpl implements QuestionService {
             throw new AppException(ErrorCode.INVALID_SINGLE_ANSWER);
         }
 
-        if (type == QuestionType.MULTIPLE_CHOICE && correctCount < 1) {
+        if (type == QuestionType.MULTIPLE_CHOICE && correctCount <= 1) {
             throw new AppException(ErrorCode.INVALID_SINGLE_ANSWER);
         }
     }

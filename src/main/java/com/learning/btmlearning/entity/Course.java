@@ -28,7 +28,10 @@ public class Course {
     private String thumbnailUrl;
     private BigDecimal price;
     private String level;
+
+    @Enumerated(EnumType.STRING)
     private CourseStatus status;
+
     private float avgRating;
     private int totalStudents;
     private int totalLessons;

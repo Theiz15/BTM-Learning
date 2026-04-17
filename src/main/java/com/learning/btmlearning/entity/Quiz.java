@@ -33,6 +33,6 @@ public class Quiz {
     @JoinColumn(name = "lesson_id")
     private Lesson lesson;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuizQuestion> questions;
 }

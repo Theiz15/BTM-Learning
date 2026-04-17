@@ -20,10 +20,12 @@ public class Answer {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    private boolean isCorrect;
+    private boolean correct;
     private int orderIndex;
+    private String explanation;
 
     @ManyToOne
     @JoinColumn(name = "question_id")
     private Question question;
+    private String referenceAnswer;
 }

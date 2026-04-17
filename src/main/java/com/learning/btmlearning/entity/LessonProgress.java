@@ -21,28 +21,27 @@ public class LessonProgress {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "enrollment_id", nullable = false)
-    private Enrollment enrollment;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lesson_id", nullable = false)
     private Lesson lesson;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enrollment_id", nullable = false)
+    private Enrollment enrollment;
+
+    private Boolean isCompleted = false;
+
+    private Integer watchedSeconds = 0;
+
+    private LocalDateTime completeAt;
+
+    private LocalDateTime lastWatchedAt;
+
     @Enumerated(EnumType.STRING)
-    private ProgressStatus status = ProgressStatus.NOT_STARTED;
+    private ProgressStatus status;
 
-    @Column(name = "watch_percent")
-    private int watchPercent = 0;
-
-    @Column(name = "time_spent_seconds")
-    private int timeSpentSeconds = 0;
-
-    @Column(name = "quiz_score")
     private Double quizScore;
-
-    @Column(name = "last_accessed_at")
-    private LocalDateTime lastAccessedAt;
-
-    @Column(name = "completed_at")
-    private LocalDateTime completedAt;
 }

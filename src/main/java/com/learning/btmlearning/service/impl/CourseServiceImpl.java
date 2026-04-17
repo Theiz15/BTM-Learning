@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,13 +30,16 @@ public class CourseServiceImpl implements CourseService {
     public CourseResponse createCourse(CourseRequest request) {
         Course course = courseMapper.toCourse(request);
 
-        FileUpload fileUpload = fileUploadRepository.findById(request.getFileUploadId()).orElseThrow(
-                () -> new AppException(ErrorCode.FILE_NOT_FOUND)
-        );
+        if (Objects.nonNull(request.getFileUploadId())) {
+            FileUpload fileUpload = fileUploadRepository.findById(request.getFileUploadId()).orElseThrow(
+                    () -> new AppException(ErrorCode.FILE_NOT_FOUND)
+            );
+
+            course.setThumbnailUrl(fileUpload.getFilePath());
+        }
 
         course.setCreateAt(LocalDateTime.now());
-        course.setThumbnailUrl(fileUpload.getFilePath());
-
+        course.setStatus(CourseStatus.DRAFT);
         return courseMapper.toCourseResponse(courseRepository.save(course));
     }
 
@@ -57,7 +61,7 @@ public class CourseServiceImpl implements CourseService {
                 () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
         );
 
-        course.setStatus(CourseStatus.DRAFT);
+        course.setStatus(CourseStatus.INACTIVE);
         courseRepository.save(course);
     }
 

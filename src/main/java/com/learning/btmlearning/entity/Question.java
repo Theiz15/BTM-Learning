@@ -27,15 +27,16 @@ public class Question {
     private String content;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private QuestionType questionType;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private Difficulty difficulty;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String explanation;
-
     private int orderIndex;
+
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(cascade = CascadeType.ALL)
@@ -43,5 +44,6 @@ public class Question {
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
+    @Builder.Default
     private List<Answer> answers = new ArrayList<>();
 }

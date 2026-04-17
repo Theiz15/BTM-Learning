@@ -1,13 +1,18 @@
 package com.learning.btmlearning.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class CourseProgressResponse {
-    private Long Id;
+    private Long courseId;
     private String courseTitle;
     private int totalLessons;
     private int completedLessons;
@@ -18,7 +23,7 @@ public class CourseProgressResponse {
     @Data
     @Builder
     public static class SectionProgressResponse {
-        private int sectionId;
+        private Long sectionId;
         private String sectionTitle;
         private int completedLessons;
         private int totalLessons;

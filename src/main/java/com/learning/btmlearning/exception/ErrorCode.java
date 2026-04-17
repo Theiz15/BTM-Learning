@@ -26,6 +26,8 @@ public enum ErrorCode {
     ANSWER_NOT_FOUND(1016,"Answer not found" , HttpStatus.NOT_FOUND),
     INVALID_SINGLE_ANSWER(1017,"There must be exactly one correct answer" , HttpStatus.BAD_REQUEST),
     INVALID_STOCK_QUESTION(1018,"Invalid stock question" , HttpStatus.BAD_REQUEST),
+    ENROLLMENT_EXIST(1019,"Enrollment already exists" , HttpStatus.BAD_REQUEST),
+    ENROLLMENT_NOT_FOUND(1020,"Enrollment not found" , HttpStatus.NOT_FOUND),
     ;
 
     ErrorCode(int errorCode, String errorMsg, HttpStatusCode statusCode) {
