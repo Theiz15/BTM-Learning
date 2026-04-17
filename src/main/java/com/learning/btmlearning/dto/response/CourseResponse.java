@@ -1,30 +1,27 @@
 package com.learning.btmlearning.dto.response;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import com.learning.btmlearning.constant.CourseStatus;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class CourseResponse {
-    Long id;
-    String title;
-    String slug;
-    String description;
-    String thumbnailUrl;
-    Integer categoryId;
-    String categoryName;
-    Long instructorId;
-    Double averageRating;
-    Integer ratingCount;
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+    private Long id;
+    private String title;
+    private String slug;
+    private String description;
+    private String thumbnailUrl;
+    private BigDecimal price;
+    private String level;
+    private CourseStatus status;
+    private float avgRating;
+    private int totalStudents;
+    private int totalLessons;
+    private LocalDateTime publishDate;
+    private LocalDateTime createAt;
+    private LocalDateTime updateAt;
+    private List<SectionResponse> sections;
 }

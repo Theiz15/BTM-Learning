@@ -1,53 +1,52 @@
 package com.learning.btmlearning.entity;
 
+import com.learning.btmlearning.constant.CourseStatus;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
-@Entity
 @Table(name = "courses")
+@Entity
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Course {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
 
-    @Column(nullable = false)
-    String title;
+    private String title;
+    private String slug;
+    private String description;
+    private String thumbnailUrl;
+    private BigDecimal price;
+    private String level;
 
-    @Column(nullable = false, unique = true)
-    String slug;
+    @Enumerated(EnumType.STRING)
+    private CourseStatus status;
 
-    @Column(columnDefinition = "TEXT")
-    String description;
+    private float avgRating;
+    private int totalStudents;
+    private int totalLessons;
+    private LocalDateTime publishDate;
+    private LocalDateTime createAt;
+    private LocalDateTime updateAt;
 
-    String thumbnailUrl;
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Section> sections;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "instructor_id", nullable = false)
+    User instructor ;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
-    Category category;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "instructor_id", nullable = false)
-    User instructor;
-
-    Double averageRating = 0.0;
-
-    Integer ratingCount = 0;
-
-    @CreationTimestamp
-    LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    LocalDateTime updatedAt;
+    private Category category;
 }
