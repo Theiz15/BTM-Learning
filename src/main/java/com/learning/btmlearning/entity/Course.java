@@ -1,45 +1,46 @@
 package com.learning.btmlearning.entity;
 
 import com.learning.btmlearning.constant.CourseStatus;
-import com.learning.btmlearning.constant.CourseLevel;
 import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
-@Entity
 @Table(name = "courses")
+@Entity
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-public class Course extends BaseEntity {
-    String title ;
+@NoArgsConstructor
+@AllArgsConstructor
+public class Course {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    String slug ;
-
-    String description ;
-
-    String thumbnailUrl ;
-
-    long price ;
+    private String title;
+    private String slug;
+    private String description;
+    private String thumbnailUrl;
+    private BigDecimal price;
+    private String level;
 
     @Enumerated(EnumType.STRING)
-    CourseLevel level ;
+    private CourseStatus status;
 
-    @Enumerated(EnumType.STRING)
-    CourseStatus status ;
+    private float avgRating;
+    private int totalStudents;
+    private int totalLessons;
+    private LocalDateTime publishDate;
+    private LocalDateTime createAt;
+    private LocalDateTime updateAt;
 
-    @Builder.Default
-    float avgRating = 0.0F;
-
-    int totalStudents ;
-
-    int totalLessons ;
-
-    LocalDateTime publishAt ;
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Section> sections;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instructor_id", nullable = false)
@@ -47,9 +48,5 @@ public class Course extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
-    Category category;
-
-//    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @Builder.Default
-//    List<Section> sections = new ArrayList<>();
+    private Category category;
 }

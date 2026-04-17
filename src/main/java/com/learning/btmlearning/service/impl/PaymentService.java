@@ -1,7 +1,6 @@
 package com.learning.btmlearning.service.impl;
 
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learning.btmlearning.configuration.VNPayConfig;
 import com.learning.btmlearning.constant.EnrollmentStatus;
@@ -15,7 +14,6 @@ import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.repository.EnrollmentRepository;
 import com.learning.btmlearning.repository.PaymentRepository;
-import com.learning.btmlearning.repository.UserRepository;
 import com.learning.btmlearning.utils.SecurityUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -34,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -68,7 +67,7 @@ public class PaymentService {
         Payment payment = Payment.builder()
                 .user(user)
                 .course(course)
-                .amount(BigDecimal.valueOf(course.getPrice()))
+                .amount(course.getPrice())
                 .currency("VND")
                 .status(PaymentStatus.PENDING)
                 .gateway("VNPAY")
@@ -76,7 +75,10 @@ public class PaymentService {
         payment = paymentRepository.save(payment);
 
         // 3. Build URL VNPay, dùng ID của Payment làm TxnRef
-        long vnpAmount = (long) (course.getPrice() * 100);
+        long vnpAmount = course.getPrice()
+                .multiply(BigDecimal.valueOf(100))
+                .longValue();
+
         String vnp_TxnRef = String.valueOf(payment.getId());
 
         Map<String, String> vnp_Params = new HashMap<>();
