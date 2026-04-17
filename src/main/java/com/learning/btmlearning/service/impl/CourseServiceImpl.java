@@ -52,6 +52,10 @@ public class CourseServiceImpl implements CourseService {
         courseMapper.updateCourse(course, request);
         course.setUpdateAt(LocalDateTime.now());
 
+        if (request.getStatus() == CourseStatus.PUBLISHED) {
+            course.setPublishDate(LocalDateTime.now());
+        }
+
         return courseMapper.toCourseResponse(courseRepository.save(course));
     }
 
