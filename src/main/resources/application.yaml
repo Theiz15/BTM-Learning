@@ -27,6 +27,10 @@ spring:
         registration:
           google:
             client-id: ${CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
 
 api:
   prefix: /api/v1
@@ -35,6 +39,8 @@ jwt:
   access-expiration: 900000                 # 15 phút
   refresh-expiration: 604800000             # 7 ngày
 
+front-end:
+  oauth2-redirect-url: ${URL_FRONTEND}
 
 vnpay:
   tmn-code: ${TMN_CODE}
