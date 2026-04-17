@@ -1,7 +1,6 @@
     package com.learning.btmlearning.controller;
 
 
-    import com.learning.btmlearning.dto.request.GoogleLoginRequest;
     import com.learning.btmlearning.dto.request.LoginRequest;
     import com.learning.btmlearning.dto.request.RefreshRequest;
     import com.learning.btmlearning.dto.request.RegisterRequest;
@@ -50,14 +49,6 @@
             authService.logout(authHeader);
             return ApiResponse.<String>builder()
                     .message("Refresh successful")
-                    .build();
-        }
-
-        @PostMapping("/google")
-        public ApiResponse<AuthResponse> googleLogin(@RequestBody @Valid GoogleLoginRequest request) {
-            return ApiResponse.<AuthResponse>builder()
-                    .message("google login successful")
-                    .result(authService.googleLogin(request))
                     .build();
         }
     }

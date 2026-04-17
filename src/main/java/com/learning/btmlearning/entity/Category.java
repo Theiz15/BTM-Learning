@@ -16,7 +16,7 @@ import java.util.List;
 @Builder
 public class Category {
     @Id
-            @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id ;
 
     String name ;
