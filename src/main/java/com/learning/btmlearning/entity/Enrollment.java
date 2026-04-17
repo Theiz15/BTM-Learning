@@ -30,12 +30,19 @@ public class Enrollment {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
+    private Payment payment;
+
+    @Column(name = "progress_percent", nullable = false)
+    @Builder.Default
+    Float progressPercent = 0.0f;
+
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus = PaymentStatus.FREE;
 
     private EnrollmentStatus status;
 
-    private BigDecimal finalPrice = BigDecimal.ZERO;
     private LocalDateTime enrolledAt;
     private LocalDateTime completedAt;
 }

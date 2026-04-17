@@ -27,6 +27,44 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${CLIENT_ID}
+
+api:
+  prefix: /api/v1
+jwt:
+  signerKey:  ${JWT_SIGNER_KEY}
+  access-expiration: 900000                 # 15 phút
+  refresh-expiration: 604800000             # 7 ngày
+
+
+vnpay:
+  tmn-code: ${TMN_CODE}
+  hash-secret: ${HASH_SECRET}
+  pay-url: ${PAY_URL}
+  return-url: ${RETURN_URL}
+  api-url: ${API_URL_VNPAY}
+
+openai:
+  # Nếu dùng Groq miễn phí, đổi URL thành: https://api.groq.com/openai/v1/chat/completions
+  api-url: ${API_URL_OPEN_AI}
+  api-key: ${API_KEY}
+  model: ${MODEL} # Nếu dùng Groq, đổi thành "llama3-8b-8192"
+  max-tokens: 1000
+  temperature: 0.7
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 api:
   prefix: /api/v1
 jwt:

@@ -1,7 +1,15 @@
 package com.learning.btmlearning.controller;
 
 import com.learning.btmlearning.dto.request.CourseRequest;
+import com.learning.btmlearning.constant.CourseLevel;
+import com.learning.btmlearning.dto.request.CreateCourseRequest;
 import com.learning.btmlearning.dto.response.ApiResponse;
+import com.learning.btmlearning.dto.response.AuthResponse;
+import com.learning.btmlearning.dto.response.CourseDetailResponse;
+import com.learning.btmlearning.dto.response.PagedCourseResponse;
+import com.learning.btmlearning.service.ICourseService;
+import jakarta.validation.Valid;
+import lombok.AccessLevel;
 import com.learning.btmlearning.dto.response.CourseResponse;
 import com.learning.btmlearning.service.CourseService;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("${api.prefix}/courses")
 @RequiredArgsConstructor
 public class CourseController {
     private final CourseService courseService;

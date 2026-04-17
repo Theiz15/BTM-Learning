@@ -1,16 +1,25 @@
 package com.learning.btmlearning.service.impl;
 
+import com.learning.btmlearning.constant.CourseLevel;
 import com.learning.btmlearning.constant.CourseStatus;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
+import com.learning.btmlearning.dto.request.CreateCourseRequest;
+import com.learning.btmlearning.dto.response.CourseDetailResponse;
+import com.learning.btmlearning.dto.response.PagedCourseResponse;
+import com.learning.btmlearning.entity.Category;
 import com.learning.btmlearning.entity.Course;
 import com.learning.btmlearning.entity.FileUpload;
 import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
+import com.learning.btmlearning.repository.CategoryRepository;
 import com.learning.btmlearning.mapper.CourseMapper;
 import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.repository.FileUploadRepository;
 import com.learning.btmlearning.service.CourseService;
+import com.learning.btmlearning.service.ICourseService;
+import com.learning.btmlearning.utils.SecurityUtil;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

@@ -3,9 +3,14 @@ package com.learning.btmlearning.mapper;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
 import com.learning.btmlearning.dto.response.SectionResponse;
+import com.learning.btmlearning.dto.request.CreateCourseRequest;
+import com.learning.btmlearning.dto.response.CourseDetailResponse;
 import com.learning.btmlearning.entity.Course;
 import com.learning.btmlearning.entity.Section;
 import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingConstants;
 
 @Mapper(
         componentModel = "spring",
