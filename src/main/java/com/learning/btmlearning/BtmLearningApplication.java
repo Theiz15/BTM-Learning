@@ -9,5 +9,4 @@ public class BtmLearningApplication {
     public static void main(String[] args) {
         SpringApplication.run(BtmLearningApplication.class, args);
     }
-
 }

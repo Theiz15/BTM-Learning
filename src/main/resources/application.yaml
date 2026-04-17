@@ -1,7 +1,7 @@
 server:
-  port: ${SERVER_PORT}
+  port: ${SERVER_PORT:8088}
   servlet:
-    context-path: /api/v1
+    context-path: ${CONTEXT_PATH:}
 
 spring:
   application:
@@ -12,10 +12,34 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${DDL_AUTO:update}
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+  folder:
+    course-thumbnails: ${CLOUDINARY_COURSE_THUMBNAILS_FOLDER:course-thumbnails}

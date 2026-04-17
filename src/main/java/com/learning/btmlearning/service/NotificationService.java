@@ -1,0 +1,95 @@
+package com.learning.btmlearning.service;
+
+import com.learning.btmlearning.constant.NotificationType;
+import com.learning.btmlearning.dto.request.NotificationCreationRequest;
+import com.learning.btmlearning.dto.response.NotificationResponse;
+import com.learning.btmlearning.entity.Notification;
+import com.learning.btmlearning.entity.User;
+import com.learning.btmlearning.exception.AppException;
+import com.learning.btmlearning.exception.ErrorCode;
+import com.learning.btmlearning.repository.NotificationRepository;
+import com.learning.btmlearning.repository.UserRepository;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class NotificationService {
+    NotificationRepository notificationRepository;
+    UserRepository userRepository;
+    JavaMailSender mailSender;
+
+    public NotificationResponse createNotification(NotificationCreationRequest request) {
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        Notification notification = new Notification();
+        notification.setUser(user);
+        notification.setTitle(request.getTitle());
+        notification.setMessage(request.getMessage());
+        notification.setType(request.getType());
+        notification.setIsRead(false);
+
+        notification = notificationRepository.save(notification);
+        sendNotificationEmail(user.getEmail(), request.getTitle(), request.getMessage());
+        return mapToResponse(notification);
+    }
+
+    public List<NotificationResponse> getNotificationsByUser(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
+
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public NotificationResponse markAsRead(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new AppException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+        notification.setIsRead(true);
+        notification = notificationRepository.save(notification);
+        return mapToResponse(notification);
+    }
+
+    public void notifyUser(Long userId, String title, String message, NotificationType type) {
+        NotificationCreationRequest request = NotificationCreationRequest.builder()
+                .userId(userId)
+                .title(title)
+                .message(message)
+                .type(type)
+                .build();
+        createNotification(request);
+    }
+
+    private void sendNotificationEmail(String toEmail, String title, String message) {
+        SimpleMailMessage email = new SimpleMailMessage();
+        email.setTo(toEmail);
+        email.setSubject("[BTM Learning] " + title);
+        email.setText(message);
+        mailSender.send(email);
+    }
+
+    private NotificationResponse mapToResponse(Notification notification) {
+        return NotificationResponse.builder()
+                .id(notification.getId())
+                .userId(notification.getUser().getId())
+                .title(notification.getTitle())
+                .message(notification.getMessage())
+                .type(notification.getType())
+                .isRead(notification.getIsRead())
+                .createdAt(notification.getCreatedAt())
+                .build();
+    }
+}
