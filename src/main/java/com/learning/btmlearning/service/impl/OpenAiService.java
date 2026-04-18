@@ -38,7 +38,6 @@ public class OpenAiService {
             backoff = @Backoff(delay = 2000, multiplier = 2)
     )
     public OpenAiChatResponse chat(List<Map<String,String>> messages){
-        // 1. Chuẩn bị Header (Chứa API Key)
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(openAiConfig.getApiKey());
@@ -51,7 +50,6 @@ public class OpenAiService {
 
         HttpEntity<Map<String ,Object>> request = new HttpEntity<>(requestBody, headers);
         try {
-            // 3. Gửi POST Request
             log.info(">>> Đang gửi yêu cầu tới AI Model: {}", openAiConfig.getModel());
             return restTemplate.postForObject(
                     openAiConfig.getApiUrl(),
@@ -70,7 +68,6 @@ public class OpenAiService {
         requestBody.put("messages", messages);
         requestBody.put("temperature", openAiConfig.getTemperature());
 
-        // BẬT CHẾ ĐỘ STREAM
         requestBody.put("stream", true);
 
         log.info(">>> Đang mở kết nối STREAM tới AI Model...");

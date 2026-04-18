@@ -3,13 +3,17 @@ package com.learning.btmlearning.controller;
 import com.learning.btmlearning.configuration.VNPayConfig;
 import com.learning.btmlearning.service.impl.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,8 +25,9 @@ public class PaymentController {
 
     PaymentService paymentService;
 
-//    @Value("${frontend.url:http://localhost:3000}")
-//    private String frontendUrl;
+    @Value("${vnpay.return-url}")
+            @NonFinal
+    String frontendUrl;
 
     @PostMapping("/create-url")
     @PreAuthorize("isAuthenticated()")
@@ -34,7 +39,7 @@ public class PaymentController {
     }
 
     @GetMapping("/vnpay-return")
-    public ResponseEntity<?> vnpayReturn(HttpServletRequest request) {
+    public void vnpayReturn(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> fields = new HashMap<>();
         for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
             fields.put(entry.getKey(), entry.getValue()[0]);
@@ -51,14 +56,12 @@ public class PaymentController {
             boolean isSuccess = paymentService.processPaymentReturn(fields);
 
             if (isSuccess) {
-                // TRẢ VỀ TEXT TRỰC TIẾP LÊN TRÌNH DUYỆT
-                return ResponseEntity.ok("🎉 CHÚC MỪNG! Thanh toán thành công cho mã đơn hàng: " + txnRef +
-                        ". Bạn có thể kiểm tra bảng payments và enrollments trong Database.");
+                response.sendRedirect(frontendUrl + "?status=success&txnRef=" + txnRef);
             } else {
-                return ResponseEntity.badRequest().body("❌ THANH TOÁN THẤT BẠI hoặc ĐÃ BỊ HỦY cho mã đơn hàng: " + txnRef);
+                response.sendRedirect(frontendUrl + "?status=failed&txnRef=" + txnRef);
             }
         } else {
-            return ResponseEntity.badRequest().body("⚠️ LỖI BẢO MẬT: Sai chữ ký VNPay!");
+            response.sendRedirect(frontendUrl + "?status=invalid_signature");
         }
     }
 }

@@ -1,18 +1,14 @@
 package com.learning.btmlearning.controller;
 
 import com.learning.btmlearning.dto.request.CourseRequest;
-import com.learning.btmlearning.constant.CourseLevel;
-import com.learning.btmlearning.dto.request.CreateCourseRequest;
 import com.learning.btmlearning.dto.response.ApiResponse;
-import com.learning.btmlearning.dto.response.AuthResponse;
-import com.learning.btmlearning.dto.response.CourseDetailResponse;
-import com.learning.btmlearning.dto.response.PagedCourseResponse;
-import com.learning.btmlearning.service.ICourseService;
-import jakarta.validation.Valid;
-import lombok.AccessLevel;
 import com.learning.btmlearning.dto.response.CourseResponse;
 import com.learning.btmlearning.service.CourseService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -78,6 +74,45 @@ public class CourseController {
         ApiResponse<CourseResponse> apiResponse = ApiResponse.<CourseResponse>builder()
                 .message("Get course successfully")
                 .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/pending")
+    public ResponseEntity<ApiResponse<Page<CourseResponse>>> getPendingCourses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").ascending());
+
+        Page<CourseResponse> result = courseService.getPendingCourses(pageable);
+
+        ApiResponse<Page<CourseResponse>> apiResponse = ApiResponse.<Page<CourseResponse>>builder()
+                .message("Get course successfully")
+                .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @PatchMapping("/{id}/approve")
+    public ResponseEntity<ApiResponse<Void>> approveCourse(@PathVariable Long id) {
+        courseService.approveCourse(id);
+
+        ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
+                .message("Approve course successfully")
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @PatchMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<Void>> rejectCourse(@PathVariable Long id) {
+        courseService.rejectCourse(id);
+
+        ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
+                .message("Reject course successfully")
                 .build();
 
         return ResponseEntity.ok(apiResponse);

@@ -43,7 +43,7 @@ public class PaymentService {
     PaymentRepository paymentRepository;
     EnrollmentRepository enrollmentRepository;
     SecurityUtil securityUtil;
-    ObjectMapper objectMapper; // Dùng để chuyển Map thành JSON String
+    ObjectMapper objectMapper;
 
     @Value("${vnpay.tmn-code}") @NonFinal String tmnCode;
     @Getter
@@ -58,12 +58,10 @@ public class PaymentService {
 
         User user = securityUtil.getCurrentUser();
 
-        // 1. Kiểm tra xem đã mua chưa
         if (enrollmentRepository.existsByUserIdAndCourseId(user.getId(), courseId)) {
             throw new AppException(ErrorCode.YOU_ARE_OWN);
         }
 
-        // 2. Tạo bản ghi Payment (PENDING) lưu vào DB trước
         Payment payment = Payment.builder()
                 .user(user)
                 .course(course)
@@ -74,7 +72,6 @@ public class PaymentService {
                 .build();
         payment = paymentRepository.save(payment);
 
-        // 3. Build URL VNPay, dùng ID của Payment làm TxnRef
         long vnpAmount = course.getPrice()
                 .multiply(BigDecimal.valueOf(100))
                 .longValue();
@@ -124,7 +121,6 @@ public class PaymentService {
             }
         }
 
-        // Tạo chữ ký từ hàm đã sửa ở Bước 1
         String vnp_SecureHash = VNPayConfig.hashAllFields(vnp_Params, secretKey);
 
         // Ghép chữ ký vào URL cuối cùng
@@ -143,7 +139,6 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch hợp lệ"));
 
-        // Nếu giao dịch đã được xử lý (tránh trường hợp spam F5 Return URL)
         if (payment.getStatus() != PaymentStatus.PENDING) {
             return payment.getStatus() == PaymentStatus.SUCCESS;
         }
@@ -156,17 +151,16 @@ public class PaymentService {
         }
 
         if ("00".equals(responseCode)) {
-            // Cập nhật trạng thái Payment thành công
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setTransactionId(transactionNo);
             payment.setPaidAt(LocalDateTime.now());
             paymentRepository.save(payment);
 
-            // Sinh ra bản ghi Enrollment cho phép user học
             Enrollment enrollment = Enrollment.builder()
                     .user(payment.getUser())
                     .course(payment.getCourse())
                     .payment(payment)
+                    .paymentStatus(PaymentStatus.SUCCESS)
                     .progressPercent(0.0f)
                     .status(EnrollmentStatus.ACTIVE)
                     .build();
@@ -175,7 +169,6 @@ public class PaymentService {
             log.info(">>> Giao dịch {} THÀNH CÔNG. Đã cấp quyền học khóa {}", paymentId, payment.getCourse().getId());
             return true;
         } else {
-            // Thanh toán thất bại hoặc bị hủy
             payment.setStatus(PaymentStatus.FAILED);
             payment.setTransactionId(transactionNo);
             paymentRepository.save(payment);

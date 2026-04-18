@@ -2,6 +2,7 @@ package com.learning.btmlearning.mapper;
 
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
+import com.learning.btmlearning.dto.response.CourseSummaryResponse;
 import com.learning.btmlearning.dto.response.SectionResponse;
 import com.learning.btmlearning.dto.request.CreateCourseRequest;
 import com.learning.btmlearning.dto.response.CourseDetailResponse;
@@ -26,6 +27,8 @@ public interface CourseMapper {
 
     @Mapping(source = "sections", target = "sections", qualifiedByName = "toSectionResponse")
     CourseResponse toCourseResponse (Course course);
+
+    CourseSummaryResponse toCourseSummaryResponse (Course course);
 
     @Named("toSectionResponse")
     SectionResponse toSectionResponse (Section section);
