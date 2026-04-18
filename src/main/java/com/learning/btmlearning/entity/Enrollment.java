@@ -1,51 +1,48 @@
 package com.learning.btmlearning.entity;
 
 import com.learning.btmlearning.constant.EnrollmentStatus;
+import com.learning.btmlearning.constant.PaymentStatus;
 import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
 @Table(name = "enrollments")
+@Entity
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Enrollment {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    User user;
+    @ManyToOne
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)
-    Course course;
+    private Course course;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id")
-    Payment payment;
+    private Payment payment;
 
     @Column(name = "progress_percent", nullable = false)
     @Builder.Default
     Float progressPercent = 0.0f;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Builder.Default
-    EnrollmentStatus status = EnrollmentStatus.ACTIVE;
+    private PaymentStatus paymentStatus = PaymentStatus.FREE;
 
-    @CreationTimestamp
-    @Column(name = "enrolled_at", nullable = false, updatable = false)
-    LocalDateTime enrolledAt;
+    private EnrollmentStatus status;
 
-    @Column(name = "completed_at")
-    LocalDateTime completedAt;
+    private LocalDateTime enrolledAt;
+    private LocalDateTime completedAt;
 }
