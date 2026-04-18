@@ -46,6 +46,7 @@ public class UserServiceImpl implements IUserService {
     public UserProfile updateUserProfile(UpdateProfileRequest request) {
         User user = securityUtil.getCurrentUser();
 
+        user.setBio(request.getBio());
         user.setFullName(request.getFullName());
         userRepository.save(user);
         return userMapper.toUserProfile(user);

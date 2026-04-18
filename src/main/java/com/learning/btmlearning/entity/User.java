@@ -21,11 +21,13 @@ public class User extends BaseEntity {
     String fullName;
     String avatarUrl;
 
+    String bio ;
+
     @Enumerated(EnumType.STRING)
     UserRole role;
 
     @Enumerated(EnumType.STRING)
-    Provider provider; // LOCAL, GOOGLE, GITHUB
+    Provider provider;
 
     Boolean isActive = true;
 }

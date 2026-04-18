@@ -4,6 +4,8 @@ package com.learning.btmlearning.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,5 +17,7 @@ public class UserProfile {
     String fullName;
     String avatarUrl;
     String role;
+    String bio;
     boolean isActive;
+    LocalDateTime createdAt;
 }
