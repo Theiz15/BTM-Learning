@@ -52,13 +52,13 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public CategoryResponse getCategoryById(Integer categoryId) {
+    public CategoryResponse getCategoryById(Long categoryId) {
         Category category = findCategory(categoryId);
         return mapToResponse(category);
     }
 
     @Transactional
-    public CategoryResponse updateCategory(Integer categoryId, CategoryUpdateRequest request) {
+    public CategoryResponse updateCategory(Long categoryId, CategoryUpdateRequest request) {
         Category category = findCategory(categoryId);
 
         if (!category.getName().equals(request.getName()) && categoryRepository.existsByName(request.getName())) {
@@ -77,13 +77,13 @@ public class CategoryService {
     }
 
     @Transactional
-    public void deleteCategory(Integer categoryId) {
+    public void deleteCategory(Long categoryId) {
         Category category = findCategory(categoryId);
         categoryRepository.delete(category);
     }
 
     @Transactional(readOnly = true)
-    Category findCategory(Integer categoryId) {
+    public Category findCategory(Long categoryId) {
         return categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
     }
@@ -100,7 +100,7 @@ public class CategoryService {
                 .build();
     }
 
-    private String generateUniqueSlug(String name, Integer categoryId) {
+    private String generateUniqueSlug(String name, Long categoryId) {
         String baseSlug = toSlug(name);
         String slug = baseSlug;
         int suffix = 1;
@@ -112,7 +112,7 @@ public class CategoryService {
         return slug;
     }
 
-    private boolean isSlugTaken(String slug, Integer categoryId) {
+    private boolean isSlugTaken(String slug, Long categoryId) {
         if (categoryId == null) {
             return categoryRepository.existsBySlug(slug);
         }

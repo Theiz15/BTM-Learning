@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -27,4 +28,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     List<Course> findRecommendedCourses(@Param("categoryIds") List<Long> categoryIds,
                                         @Param("enrolledIds") List<Long> enrolledIds,
                                         Pageable pageable) ;
+
+
+    @Query("SELECT c FROM Course c WHERE c.instructor.id = :userId AND c.id = :courseId")
+    Optional<Course> findByInstructorIdAndCourseId(@Param("userId") Long userId,
+                                                   @Param("courseId") Long courseId);
 }

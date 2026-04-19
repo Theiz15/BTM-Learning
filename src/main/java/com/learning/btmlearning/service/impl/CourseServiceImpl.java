@@ -5,10 +5,7 @@ import com.learning.btmlearning.dto.request.CourseDiscountRequest;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
 import com.learning.btmlearning.dto.response.CourseSummaryResponse;
-import com.learning.btmlearning.entity.Course;
-import com.learning.btmlearning.entity.CoursePromotion;
-import com.learning.btmlearning.entity.FileUpload;
-import com.learning.btmlearning.entity.User;
+import com.learning.btmlearning.entity.*;
 import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.CourseMapper;
@@ -36,7 +33,6 @@ public class CourseServiceImpl implements CourseService {
     private final FileUploadRepository fileUploadRepository;
     private final SecurityUtil securityUtil;
     private final CoursePromotionRepository coursePromotionRepository;
-    private final SecurityUtil securityUtil;
     private final CategoryRepository categoryRepository;
 
     @Override
@@ -53,10 +49,19 @@ public class CourseServiceImpl implements CourseService {
             course.setThumbnailUrl(fileUpload.getFilePath());
         }
 
+        if (Objects.nonNull(request.getCategoryId())) {
+            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(
+                    () -> new AppException(ErrorCode.CATEGORY_NOT_FOUND)
+            );
+
+            course.setCategory(category);
+        }
+
         course.setCreateAt(LocalDateTime.now());
         course.setStatus(CourseStatus.DRAFT);
         course.setOriginalPrice(request.getPrice());
         course.setInstructor(user);
+
         return courseMapper.toCourseResponse(courseRepository.save(course));
     }
 
@@ -98,10 +103,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public Course findCourse(Long courseId) {
-        return courseRepository.findById(courseId).orElseThrow(
-        Course course = getCourse(courseId);
-
-        return courseMapper.toCourseResponse(course);
+        return getCourse(courseId);
     }
 
     private Course getCourse(Long courseId) {
