@@ -15,6 +15,7 @@ import com.learning.btmlearning.mapper.LessonMapper;
 import com.learning.btmlearning.mapper.LessonProgressMapper;
 import com.learning.btmlearning.repository.*;
 import com.learning.btmlearning.service.LessonService;
+import com.learning.btmlearning.utils.SecurityUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,8 @@ public class LessonServiceImpl implements LessonService {
     private final UserRepository userRepository;
     private final LessonProgressMapper lessonProgressMapper;
     private final EnrollmentRepository enrollmentRepository;
+    private final CourseRepository courseRepository;
+    private final SecurityUtil securityUtil;
 
     @Override
     public LessonResponse createLesson(LessonRequest request) {
@@ -60,14 +63,19 @@ public class LessonServiceImpl implements LessonService {
                 () -> new AppException(ErrorCode.SECTION_NOT_FOUND)
         );
 
+        Course course = courseRepository.findById(request.getCourseId()).orElseThrow(
+                () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
+        );
+
         lesson.setCreatedAt(LocalDateTime.now());
         lesson.setSection(section);
+        lesson.setCourse(course);
 
         return lessonMapper.toLessonResponse(lessonRepository.save(lesson));
     }
 
     @Override
-    public LessonResponse updateLesson(LessonUpdateRequest request) {
+    public LessonResponse updateLesson(LessonUpdateRequest request, Long lessonId) {
         return null;
     }
 
@@ -82,16 +90,18 @@ public class LessonServiceImpl implements LessonService {
 
     @Transactional
     @Override
-    public LessonProgressResponse getOrCreate(Long userId, Long lessonId) {
+    public LessonProgressResponse getOrCreate(Long lessonId) {
+        User user = securityUtil.getCurrentUser();
+
         LessonProgress lessonProgress = lessonProgressRepository
-                .findByUserIdAndLessonId(userId, lessonId)
+                .findByUserIdAndLessonId(user.getId(), lessonId)
                 .orElseGet(() -> {
                     Lesson lesson = lessonRepository.getReferenceById(lessonId);
 
                     LessonProgress progress = new LessonProgress();
-                    progress.setUser((com.learning.btmlearning.entity.User) userRepository.findById(userId).orElse(null));
+                    progress.setUser((com.learning.btmlearning.entity.User) userRepository.findById(user.getId()).orElse(null));
                     progress.setLesson(lesson);
-                    progress.setEnrollment(findEnrollment(userId, lesson.getCourse().getId()));
+                    progress.setEnrollment(findEnrollment(user.getId(), lesson.getCourse().getId()));
                     progress.setWatchedSeconds(0);
                     progress.setIsCompleted(false);
                     return progress;
@@ -102,8 +112,9 @@ public class LessonServiceImpl implements LessonService {
 
     @Transactional
     @Override
-    public LessonProgressResponse updateProgress(Long userId,
-                                                 UpdateProgressRequest request) {
+    public LessonProgressResponse updateProgress(UpdateProgressRequest request) {
+        User user = securityUtil.getCurrentUser();
+
         Lesson lesson = lessonRepository.findById(request.getLessonId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Lesson not found: " + request.getLessonId()));
@@ -111,7 +122,7 @@ public class LessonServiceImpl implements LessonService {
         Long courseId = lesson.getSection().getCourse().getId();
 
         Enrollment enrollment = enrollmentRepository
-                .findByUserIdAndCourseId(userId, courseId)
+                .findByUserIdAndCourseId(user.getId(), courseId)
                 .orElseThrow(() -> new IllegalStateException(
                         "User chưa đăng ký khoá học này"));
 
@@ -137,7 +148,7 @@ public class LessonServiceImpl implements LessonService {
 
         progress.setLastWatchedAt(LocalDateTime.now());
 
-        // Đánh dấu completed nếu chưa có
+        // Check completed if not exist
         if (progress.getIsCompleted()
                 && progress.getLastWatchedAt() == null) {
             progress.setCompleteAt(LocalDateTime.now());
@@ -152,9 +163,11 @@ public class LessonServiceImpl implements LessonService {
 
     @Transactional(readOnly = true)
     @Override
-    public CourseProgressResponse getCourseProgress(Long userId, Long courseId) {
+    public CourseProgressResponse getCourseProgress(Long courseId) {
+        User user = securityUtil.getCurrentUser();
+
         Enrollment enrollment = enrollmentRepository
-                .findByUserIdAndCourseId(userId, courseId)
+                .findByUserIdAndCourseId(user.getId(), courseId)
                 .orElseThrow(() -> new IllegalStateException("User not join this course"));
 
         // Map lessonId → progress for lookup O(1)

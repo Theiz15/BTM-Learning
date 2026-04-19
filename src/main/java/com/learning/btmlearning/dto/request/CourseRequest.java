@@ -18,4 +18,5 @@ public class CourseRequest {
     private int totalStudents;
     private LocalDateTime publishDate;
     private Long fileUploadId;
+    private Long categoryId;
 }
