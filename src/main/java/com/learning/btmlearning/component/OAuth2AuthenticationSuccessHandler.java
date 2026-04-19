@@ -25,7 +25,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     JwtService jwtService;
     UserRepository userRepository;
 
-    @Value("${front-end.oauth2-redirect-url}")
+    @Value("${front-end.oauth2-redirect-url:http://localhost:3000/oauth2/redirect}")
             @NonFinal
     String redirectUrl ;
 

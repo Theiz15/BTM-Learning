@@ -93,4 +93,18 @@ public class CourseServiceImpl implements CourseService {
 
         return courseMapper.toCourseResponse(course);
     }
+
+    @Override
+    public Course findCourse(Long courseId) {
+        return courseRepository.findById(courseId).orElseThrow(
+                () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
+        );
+    }
+
+    @Override
+    public void updateCourseRating(Long courseId, double rating, long count) {
+        Course course = findCourse(courseId);
+        course.setAvgRating((float) rating);
+        courseRepository.save(course);
+    }
 }

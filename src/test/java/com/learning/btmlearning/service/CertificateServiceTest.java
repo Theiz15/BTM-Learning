@@ -194,7 +194,7 @@ class CertificateServiceTest {
         certificate.setCourse(course);
         certificate.setIssuedAt(LocalDateTime.now());
 
-        when(certificateRepository.findByCode("CERT-ABC123DEF456")).thenReturn(Optional.of(certificate));
+        when(certificateRepository.findByCodeIgnoreCaseOrCertCodeIgnoreCase("CERT-ABC123DEF456", "CERT-ABC123DEF456")).thenReturn(Optional.of(certificate));
 
         CertificateVerificationResponse response = certificateService.verifyCertificate("CERT-ABC123DEF456");
 
@@ -206,7 +206,7 @@ class CertificateServiceTest {
 
     @Test
     void verifyCertificate_unknownCode_throwsCertificateNotFound() {
-        when(certificateRepository.findByCode("CERT-NOTFOUND")).thenReturn(Optional.empty());
+        when(certificateRepository.findByCodeIgnoreCaseOrCertCodeIgnoreCase("CERT-NOTFOUND", "CERT-NOTFOUND")).thenReturn(Optional.empty());
 
         AppException exception = assertThrows(AppException.class, () -> certificateService.verifyCertificate("CERT-NOTFOUND"));
         assertEquals(ErrorCode.CERTIFICATE_NOT_FOUND, exception.getErrorCode());

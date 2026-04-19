@@ -54,9 +54,6 @@ public class AuthService{
     @Value("${jwt.refresh-expiration}")
     Long refreshExpiration;
 
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    @NonFinal
-    String googleClientId;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
