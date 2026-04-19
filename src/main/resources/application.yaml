@@ -10,12 +10,10 @@ spring:
     multipart:
       max-file-size: 500MB
       max-request-size: 500MB
-
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/btm_learning?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
-
   jpa:
     hibernate:
       ddl-auto: none
@@ -37,7 +35,6 @@ spring:
             scope:
               - email
               - profile
-
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -50,46 +47,31 @@ spring:
           starttls:
             enable: true
 
-  api:
-    prefix: /api/v1
-  jwt:
-  signerKey:  ${JWT_SIGNER_KEY:local-dev-jwt-signer-key-change-me-please}
-  access-expiration: 900000                 # 15 phút
-  refresh-expiration: 604800000             # 7 ngày
+api:
+  prefix: /api/v1
+
+jwt:
+  signerKey: ${JWT_SIGNER_KEY:local-dev-jwt-signer-key-change-me-please}
+  access-expiration: 900000
+  refresh-expiration: 604800000
 
 front-end:
   oauth2-redirect-url: ${URL_FRONTEND:http://localhost:3000/oauth2/redirect}
 
 vnpay:
-  tmn-code: ${TMN_CODE}
-  hash-secret: ${HASH_SECRET}
-  pay-url: ${PAY_URL}
-  return-url: ${RETURN_URL}
-  api-url: ${API_URL_VNPAY}
-  frontend-return-url: ${FRONTEND_RETURN_URL}
+  tmn-code: ${TMN_CODE:demo_tmn_code}
+  hash-secret: ${HASH_SECRET:demo_hash_secret}
+  pay-url: ${PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+  return-url: ${RETURN_URL:http://localhost:8088/api/v1/payment/vnpay-return}
+  api-url: ${API_URL_VNPAY:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
+  frontend-return-url: ${FRONTEND_RETURN_URL:http://localhost:3000/payment-return}
 
 openai:
-  api-url: ${API_URL_OPEN_AI}
-  api-key: ${API_KEY}
-  model: ${MODEL}
+  api-url: ${API_URL_OPEN_AI:https://api.openai.com/v1/chat/completions}
+  api-key: ${API_KEY:demo-openai-api-key}
+  model: ${MODEL:gpt-4o-mini}
   max-tokens: 1000
   temperature: 0.7
-
-  cloudinary:
-    cloud-name: ${CLOUDINARY_CLOUD_NAME:demo}
-    api-key: ${CLOUDINARY_API_KEY:demo}
-    api-secret: ${CLOUDINARY_API_SECRET:demo}
-    data:
-      redis:
-        host: ${REDIS_HOST:localhost}
-        port: ${REDIS_PORT:6379}
-api:
-  prefix: /api/v1
-jwt:
-  signerKey:  ${JWT_SIGNER_KEY:local-dev-jwt-signer-key-change-me-please}
-  access-expiration: 900000                 # 15 phút
-  refresh-expiration: 604800000             # 7 ngày
-
 
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME:demo}

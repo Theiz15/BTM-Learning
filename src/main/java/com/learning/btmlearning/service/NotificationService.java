@@ -39,7 +39,7 @@ public class NotificationService {
         notification.setIsRead(false);
 
         notification = notificationRepository.save(notification);
-        sendNotificationEmail(user.getEmail(), request.getTitle(), request.getMessage());
+        sendNotificationEmail(user.getEmail(), user.getFullName(), request.getTitle(), request.getMessage(), request.getType());
         return mapToResponse(notification);
     }
 
@@ -73,12 +73,37 @@ public class NotificationService {
         createNotification(request);
     }
 
-    private void sendNotificationEmail(String toEmail, String title, String message) {
+    private void sendNotificationEmail(String toEmail, String fullName, String title, String message, NotificationType type) {
         SimpleMailMessage email = new SimpleMailMessage();
         email.setTo(toEmail);
-        email.setSubject("[BTM Learning] " + title);
-        email.setText(message);
+        email.setSubject(buildSubject(type, title));
+        email.setText(buildBody(fullName, title, message, type));
         mailSender.send(email);
+    }
+
+    private String buildSubject(NotificationType type, String title) {
+        return switch (type) {
+            case ENROLLMENT_CONFIRMED -> "[BTM Learning] Enrollment Confirmation";
+            case CERTIFICATE_ISSUED -> "[BTM Learning] Your Certificate Is Ready";
+            default -> "[BTM Learning] " + title;
+        };
+    }
+
+    private String buildBody(String fullName, String title, String message, NotificationType type) {
+        String recipient = (fullName == null || fullName.isBlank()) ? "Learner" : fullName;
+        String intro = switch (type) {
+            case ENROLLMENT_CONFIRMED -> "Thank you for enrolling with BTM Learning. Your seat has been confirmed successfully.";
+            case CERTIFICATE_ISSUED -> "Congratulations on your achievement. Your course certificate is now available.";
+            default -> "You have a new update from BTM Learning.";
+        };
+
+        return "Hello " + recipient + ",\n\n"
+                + intro + "\n\n"
+                + "Subject: " + title + "\n"
+                + message + "\n\n"
+                + "If you need any assistance, please contact our support team.\n\n"
+                + "Best regards,\n"
+                + "BTM Learning Team";
     }
 
     private NotificationResponse mapToResponse(Notification notification) {

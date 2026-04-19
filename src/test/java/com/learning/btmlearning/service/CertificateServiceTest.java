@@ -85,7 +85,7 @@ class CertificateServiceTest {
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
         verify(notificationService).notifyUser(
                 eq(1L),
-                eq("Certificate issued"),
+                eq("Certificate Awarded"),
                 messageCaptor.capture(),
                 eq(NotificationType.CERTIFICATE_ISSUED)
         );

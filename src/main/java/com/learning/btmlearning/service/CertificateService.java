@@ -52,8 +52,9 @@ public class CertificateService {
 
         notificationService.notifyUser(
                 user.getId(),
-                "Certificate issued",
-                "Your certificate for course '" + course.getTitle() + "' has been issued. Code: " + certificate.getCode(),
+                "Certificate Awarded",
+                "Your certificate for '" + course.getTitle() + "' has been issued successfully. "
+                        + "Certificate code: " + certificate.getCode() + ".",
                 NotificationType.CERTIFICATE_ISSUED
         );
 

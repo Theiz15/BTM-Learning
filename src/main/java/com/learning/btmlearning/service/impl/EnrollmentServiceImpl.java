@@ -2,6 +2,7 @@ package com.learning.btmlearning.service.impl;
 
 import com.learning.btmlearning.constant.CourseStatus;
 import com.learning.btmlearning.constant.EnrollmentStatus;
+import com.learning.btmlearning.constant.NotificationType;
 import com.learning.btmlearning.constant.PaymentStatus;
 import com.learning.btmlearning.dto.request.EnrollmentRequest;
 import com.learning.btmlearning.dto.request.FilterEnrollmentRequest;
@@ -16,6 +17,7 @@ import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.repository.EnrollmentRepository;
 import com.learning.btmlearning.repository.UserRepository;
 import com.learning.btmlearning.service.EnrollmentService;
+import com.learning.btmlearning.service.NotificationService;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
@@ -38,6 +40,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentMapper enrollmentMapper;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -68,7 +71,16 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         enrollment.setStatus(EnrollmentStatus.ACTIVE);
         enrollment.setPaymentStatus(PaymentStatus.FREE);
 
-        return enrollmentMapper.toEnrollmentResponse(enrollmentRepository.save(enrollment));
+        Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
+
+        notificationService.notifyUser(
+                user.getId(),
+                "Enrollment Confirmed",
+                "You have successfully enrolled in the course '" + course.getTitle() + "'. Start learning anytime from your dashboard.",
+                NotificationType.ENROLLMENT_CONFIRMED
+        );
+
+        return enrollmentMapper.toEnrollmentResponse(savedEnrollment);
     }
 
     @Override
