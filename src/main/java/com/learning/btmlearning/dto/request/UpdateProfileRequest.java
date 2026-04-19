@@ -11,7 +11,8 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpdateProfileRequest {
-    @NotBlank
     @Size(min=2, max=150)
     String fullName  ;
+
+    String bio ;
 }

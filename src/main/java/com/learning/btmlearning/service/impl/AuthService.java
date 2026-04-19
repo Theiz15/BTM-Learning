@@ -1,12 +1,7 @@
 package com.learning.btmlearning.service.impl;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
 import com.learning.btmlearning.constant.Provider;
 import com.learning.btmlearning.constant.UserRole;
-import com.learning.btmlearning.dto.request.GoogleLoginRequest;
 import com.learning.btmlearning.dto.request.LoginRequest;
 import com.learning.btmlearning.dto.request.RefreshRequest;
 import com.learning.btmlearning.dto.request.RegisterRequest;
@@ -27,19 +22,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -61,10 +48,6 @@ public class AuthService{
     @NonFinal
     @Value("${jwt.refresh-expiration}")
     Long refreshExpiration;
-
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    @NonFinal
-    String googleClientId;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -169,50 +152,6 @@ public class AuthService{
         redisTemplate.delete("refresh:" + userId);
 
         SecurityContextHolder.clearContext();
-    }
-
-    public AuthResponse googleLogin(GoogleLoginRequest request) {
-        try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-                    .setAudience(Collections.singletonList(googleClientId))
-                    .build();
-
-            GoogleIdToken idToken = verifier.verify(request.getToken()) ;
-
-            if (idToken == null) {
-                throw new AppException(ErrorCode.UNAUTHENTICATED);
-            }
-
-            GoogleIdToken.Payload payload = idToken.getPayload();
-            String email = payload.getEmail();
-            String nickname = (String) payload.get("name");
-            String avatarUrl = (String) payload.get("picture");
-
-            User user = userRepository.findByEmail(email).orElseGet(() ->{
-                User newUser = User.builder()
-                        .email(email)
-                        .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
-                        .fullName(nickname)
-                        .role(UserRole.STUDENT)
-                        .provider(Provider.GOOGLE)
-                        .isActive(true)
-                        .avatarUrl(avatarUrl)
-                        .build();
-                return userRepository.save(newUser);
-                    }
-            );
-
-            String accessToken = jwtService.generateAccessToken(user);
-            String refreshToken = jwtService.generateRefreshToken(user);
-            saveRefreshToken(user.getId(), refreshToken);
-
-            log.info(">>> Đăng nhập Google thành công cho email: {}", email);
-            return buildAuthResponse(user, accessToken, refreshToken);
-        } catch (GeneralSecurityException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private AuthResponse buildAuthResponse(User user, String accessToken , String refreshToken) {

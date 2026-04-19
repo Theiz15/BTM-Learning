@@ -26,6 +26,7 @@ public class Course {
     private String slug;
     private String description;
     private String thumbnailUrl;
+    private BigDecimal originalPrice;
     private BigDecimal price;
     private String level;
 
@@ -42,6 +43,8 @@ public class Course {
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Section> sections;
 
+    private LocalDateTime discountEndDate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instructor_id", nullable = false)
     private User instructor ;
@@ -49,4 +52,17 @@ public class Course {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;
+
+    public BigDecimal getActualPrice() {
+        if (this.originalPrice == null || this.originalPrice.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        if (this.price != null &&
+                (this.discountEndDate == null || this.discountEndDate.isAfter(LocalDateTime.now()))) {
+            return this.price;
+        }
+
+        return this.originalPrice;
+    }
 }

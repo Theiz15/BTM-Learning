@@ -1,5 +1,6 @@
-package com.learning.btmlearning.configuration;
+package com.learning.btmlearning.component;
 
+import com.learning.btmlearning.configuration.RateLimitInterceptor;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

@@ -2,6 +2,7 @@ package com.learning.btmlearning.service.impl;
 
 import com.learning.btmlearning.constant.CourseStatus;
 import com.learning.btmlearning.constant.EnrollmentStatus;
+import com.learning.btmlearning.constant.NotificationType;
 import com.learning.btmlearning.constant.PaymentStatus;
 import com.learning.btmlearning.dto.request.EnrollmentRequest;
 import com.learning.btmlearning.dto.request.FilterEnrollmentRequest;
@@ -17,9 +18,12 @@ import com.learning.btmlearning.repository.EnrollmentRepository;
 import com.learning.btmlearning.repository.UserRepository;
 import com.learning.btmlearning.service.EnrollmentService;
 import com.learning.btmlearning.utils.SecurityUtil;
+import com.learning.btmlearning.service.NotificationService;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,9 +41,12 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentMapper enrollmentMapper;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
 
     @Override
+    @Transactional
+    @CacheEvict(value = "recommendations", key = "#userId")
     public EnrollmentResponse enroll(EnrollmentRequest request) {
         Enrollment enrollment = enrollmentMapper.toEnrollment(request);
 
@@ -55,15 +62,25 @@ public class EnrollmentServiceImpl implements EnrollmentService {
             throw new RuntimeException("Course is not published");
         }
 
+        if (course.getPrice() != null && course.getPrice().compareTo(BigDecimal.ZERO) > 0) {
+            throw new RuntimeException("This course is not free. please use VNPAY's getway.");
+        }
+
         enrollment.setUser(user);
         enrollment.setCourse(course);
-        enrollment.setPaymentStatus(
-                request.getPrice().compareTo(BigDecimal.ZERO) == 0
-                        ? PaymentStatus.FREE
-                        : PaymentStatus.PENDING
+        enrollment.setStatus(EnrollmentStatus.ACTIVE);
+        enrollment.setPaymentStatus(PaymentStatus.FREE);
+
+        Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
+
+        notificationService.notifyUser(
+                user.getId(),
+                "Enrollment Confirmed",
+                "You have successfully enrolled in the course '" + course.getTitle() + "'. Start learning anytime from your dashboard.",
+                NotificationType.ENROLLMENT_CONFIRMED
         );
 
-        return enrollmentMapper.toEnrollmentResponse(enrollmentRepository.save(enrollment));
+        return enrollmentMapper.toEnrollmentResponse(savedEnrollment);
     }
 
     @Override

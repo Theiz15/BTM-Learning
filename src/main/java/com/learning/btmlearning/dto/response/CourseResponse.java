@@ -1,6 +1,7 @@
 package com.learning.btmlearning.dto.response;
 
 import com.learning.btmlearning.constant.CourseStatus;
+import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -14,7 +15,9 @@ public class CourseResponse {
     private String slug;
     private String description;
     private String thumbnailUrl;
+    private BigDecimal originalPrice;
     private BigDecimal price;
+    private LocalDateTime discountEndDate;
     private String level;
     private CourseStatus status;
     private float avgRating;

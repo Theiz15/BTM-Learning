@@ -21,6 +21,8 @@ public class User extends BaseEntity {
     String fullName;
     String avatarUrl;
 
+    String bio ;
+
     @Enumerated(EnumType.STRING)
     UserRole role;
 

@@ -5,15 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learning.btmlearning.configuration.VNPayConfig;
 import com.learning.btmlearning.constant.EnrollmentStatus;
 import com.learning.btmlearning.constant.PaymentStatus;
-import com.learning.btmlearning.entity.Course;
-import com.learning.btmlearning.entity.Enrollment;
-import com.learning.btmlearning.entity.Payment;
-import com.learning.btmlearning.entity.User;
+import com.learning.btmlearning.entity.*;
 import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.repository.EnrollmentRepository;
 import com.learning.btmlearning.repository.PaymentRepository;
+import com.learning.btmlearning.repository.VoucherRepository;
 import com.learning.btmlearning.utils.SecurityUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -38,43 +36,79 @@ import java.util.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class PaymentService {
-
     CourseRepository courseRepository;
     PaymentRepository paymentRepository;
     EnrollmentRepository enrollmentRepository;
     SecurityUtil securityUtil;
-    ObjectMapper objectMapper; // Dùng để chuyển Map thành JSON String
+    ObjectMapper objectMapper;
+    VoucherRepository voucherRepository;
+
 
     @Value("${vnpay.tmn-code}") @NonFinal String tmnCode;
     @Getter
     @Value("${vnpay.hash-secret}") @NonFinal String secretKey;
     @Value("${vnpay.pay-url}") @NonFinal String vnpPayUrl;
     @Value("${vnpay.return-url}") @NonFinal String vnpReturnUrl;
+    @Value("${vnpay.frontend-return-url}") @NonFinal String frontendReturnUrl;
+
 
     @Transactional
-    public String createPaymentUrl(Long courseId, HttpServletRequest request) {
+    public String createPaymentUrl(Long courseId, String voucherCode, HttpServletRequest request) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
 
         User user = securityUtil.getCurrentUser();
 
-        // 1. Kiểm tra xem đã mua chưa
         if (enrollmentRepository.existsByUserIdAndCourseId(user.getId(), courseId)) {
             throw new AppException(ErrorCode.YOU_ARE_OWN);
         }
 
-        // 2. Tạo bản ghi Payment (PENDING) lưu vào DB trước
+        BigDecimal finalAmount = course.getActualPrice();
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        Voucher appliedVoucher = null ;
+
+        if (voucherCode != null && !voucherCode.isEmpty()) {
+            appliedVoucher = voucherRepository.findByCodeAndIsActiveTrue(voucherCode).orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
+            discountAmount = finalAmount.multiply(BigDecimal.valueOf(appliedVoucher.getDiscountPercent())).divide(BigDecimal.valueOf(100));
+
+            finalAmount = finalAmount.subtract(discountAmount);
+        }
+
         Payment payment = Payment.builder()
                 .user(user)
                 .course(course)
-                .amount(course.getPrice())
+                .amount(finalAmount)
+                .voucher(appliedVoucher)
+                .discountAmount(discountAmount)
                 .currency("VND")
-                .status(PaymentStatus.PENDING)
-                .gateway("VNPAY")
+                .gateway(finalAmount.compareTo(BigDecimal.ZERO) == 0 ? "FREE" : "VNPAY")
+                .status(finalAmount.compareTo(BigDecimal.ZERO) == 0 ? PaymentStatus.SUCCESS : PaymentStatus.PENDING)
+                .paidAt(finalAmount.compareTo(BigDecimal.ZERO) == 0 ? LocalDateTime.now() : null)
                 .build();
+
         payment = paymentRepository.save(payment);
 
-        // 3. Build URL VNPay, dùng ID của Payment làm TxnRef
+        if (finalAmount.compareTo(BigDecimal.ZERO) == 0) {
+
+            Enrollment enrollment = Enrollment.builder()
+                    .user(user)
+                    .course(course)
+                    .payment(payment)
+                    .progressPercent(0.0f)
+                    .status(EnrollmentStatus.ACTIVE)
+                    .build();
+            enrollmentRepository.save(enrollment);
+
+            if (appliedVoucher != null) {
+                appliedVoucher.setUsedCount(appliedVoucher.getUsedCount() + 1);
+                // voucherRepository.save(appliedVoucher);
+            }
+
+            log.info(">>> Khách hàng {} đã nhận khóa học {} MIỄN PHÍ thành công!", user.getEmail(), course.getTitle());
+//            response.sendRedirect(frontendUrl + "?status=success&txnRef=" + txnRef);
+            return frontendReturnUrl + "?status=success&txnRef=" + payment.getId() + "&isFree=true";
+        }
+
         long vnpAmount = course.getPrice()
                 .multiply(BigDecimal.valueOf(100))
                 .longValue();
@@ -124,11 +158,9 @@ public class PaymentService {
             }
         }
 
-        // Tạo chữ ký từ hàm đã sửa ở Bước 1
         String vnp_SecureHash = VNPayConfig.hashAllFields(vnp_Params, secretKey);
 
-        // Ghép chữ ký vào URL cuối cùng
-        String queryUrl = query.toString() + "&vnp_SecureHash=" + vnp_SecureHash;
+        String queryUrl = query + "&vnp_SecureHash=" + vnp_SecureHash;
 
         return vnpPayUrl + "?" + queryUrl;
     }
@@ -143,7 +175,6 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch hợp lệ"));
 
-        // Nếu giao dịch đã được xử lý (tránh trường hợp spam F5 Return URL)
         if (payment.getStatus() != PaymentStatus.PENDING) {
             return payment.getStatus() == PaymentStatus.SUCCESS;
         }
@@ -156,17 +187,22 @@ public class PaymentService {
         }
 
         if ("00".equals(responseCode)) {
-            // Cập nhật trạng thái Payment thành công
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setTransactionId(transactionNo);
             payment.setPaidAt(LocalDateTime.now());
             paymentRepository.save(payment);
 
-            // Sinh ra bản ghi Enrollment cho phép user học
+            Voucher voucher = payment.getVoucher();
+
+            if (voucher != null) {
+                voucher.setUsedCount(voucher.getUsedCount() + 1);
+            }
+
             Enrollment enrollment = Enrollment.builder()
                     .user(payment.getUser())
                     .course(payment.getCourse())
                     .payment(payment)
+                    .paymentStatus(PaymentStatus.SUCCESS)
                     .progressPercent(0.0f)
                     .status(EnrollmentStatus.ACTIVE)
                     .build();
@@ -175,7 +211,6 @@ public class PaymentService {
             log.info(">>> Giao dịch {} THÀNH CÔNG. Đã cấp quyền học khóa {}", paymentId, payment.getCourse().getId());
             return true;
         } else {
-            // Thanh toán thất bại hoặc bị hủy
             payment.setStatus(PaymentStatus.FAILED);
             payment.setTransactionId(transactionNo);
             paymentRepository.save(payment);

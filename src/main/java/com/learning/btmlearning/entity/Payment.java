@@ -30,9 +30,14 @@ public class Payment {
     @JoinColumn(name = "course_id", nullable = false)
     Course course;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voucher_id", nullable = false)
+    Voucher voucher;
+
     @Column(nullable = false, precision = 12, scale = 2)
     BigDecimal amount;
 
+    BigDecimal discountAmount;
     @Column(nullable = false, length = 10)
     String currency;
 
