@@ -1,6 +1,5 @@
 package com.learning.btmlearning.dto.response;
 
-
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -11,13 +10,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserProfile {
+public class VoucherResponse {
     Long id;
-    String email;
-    String fullName;
-    String avatarUrl;
-    String role;
-    String bio;
-    boolean isActive;
-    LocalDateTime createdAt;
+    String code;
+    Integer discountPercent;
+    Integer quantity;
+    Integer usedCount;
+    LocalDateTime startDate;
+    LocalDateTime expirationDate;
+    Boolean isActive;
 }

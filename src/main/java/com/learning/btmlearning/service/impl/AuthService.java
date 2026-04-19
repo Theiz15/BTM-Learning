@@ -2,7 +2,6 @@ package com.learning.btmlearning.service.impl;
 
 import com.learning.btmlearning.constant.Provider;
 import com.learning.btmlearning.constant.UserRole;
-import com.learning.btmlearning.dto.request.GoogleLoginRequest;
 import com.learning.btmlearning.dto.request.LoginRequest;
 import com.learning.btmlearning.dto.request.RefreshRequest;
 import com.learning.btmlearning.dto.request.RegisterRequest;
@@ -27,11 +26,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -53,7 +48,6 @@ public class AuthService{
     @NonFinal
     @Value("${jwt.refresh-expiration}")
     Long refreshExpiration;
-
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {

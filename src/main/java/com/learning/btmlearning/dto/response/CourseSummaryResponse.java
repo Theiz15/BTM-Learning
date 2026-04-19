@@ -1,23 +1,25 @@
 package com.learning.btmlearning.dto.response;
 
 import com.learning.btmlearning.constant.CourseStatus;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
-public class CourseResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CourseSummaryResponse {
     private Long id;
     private String title;
     private String slug;
     private String description;
     private String thumbnailUrl;
+    private LocalDateTime discountEndDate;
     private BigDecimal originalPrice;
     private BigDecimal price;
-    private LocalDateTime discountEndDate;
     private String level;
     private CourseStatus status;
     private float avgRating;
@@ -26,5 +28,4 @@ public class CourseResponse {
     private LocalDateTime publishDate;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
-    private List<SectionResponse> sections;
 }

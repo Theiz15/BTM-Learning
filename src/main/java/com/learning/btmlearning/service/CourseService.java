@@ -1,7 +1,11 @@
 package com.learning.btmlearning.service;
 
+import com.learning.btmlearning.dto.request.CourseDiscountRequest;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
+import com.learning.btmlearning.dto.response.CourseSummaryResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.learning.btmlearning.entity.Course;
 
 import java.util.List;
@@ -12,6 +16,12 @@ public interface CourseService {
     void deleteCourse (Long courseId);
     List<CourseResponse> getAllCourses();
     CourseResponse getCourseById(Long courseId);
+
+    Page<CourseResponse> getPendingCourses(Pageable pageable);
+    void approveCourse (Long courseId);
+    void rejectCourse (Long courseId);
+
+    CourseSummaryResponse updateCourseDiscount(Long courseId, CourseDiscountRequest request);
     Course findCourse(Long courseId);
     void updateCourseRating(Long courseId, double rating, long count);
 }

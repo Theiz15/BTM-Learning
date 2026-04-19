@@ -18,7 +18,9 @@ import com.learning.btmlearning.repository.UserRepository;
 import com.learning.btmlearning.service.EnrollmentService;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +40,8 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final CourseRepository courseRepository;
 
     @Override
+    @Transactional
+    @CacheEvict(value = "recommendations", key = "#userId")
     public EnrollmentResponse enroll(EnrollmentRequest request, Long userId) {
         Enrollment enrollment = enrollmentMapper.toEnrollment(request);
 
@@ -55,13 +59,14 @@ public class EnrollmentServiceImpl implements EnrollmentService {
             throw new RuntimeException("Course is not published");
         }
 
+        if (course.getPrice() != null && course.getPrice().compareTo(BigDecimal.ZERO) > 0) {
+            throw new RuntimeException("This course is not free. please use VNPAY's getway.");
+        }
+
         enrollment.setUser(user);
         enrollment.setCourse(course);
-        enrollment.setPaymentStatus(
-                request.getPrice().compareTo(BigDecimal.ZERO) == 0
-                        ? PaymentStatus.FREE
-                        : PaymentStatus.PENDING
-        );
+        enrollment.setStatus(EnrollmentStatus.ACTIVE);
+        enrollment.setPaymentStatus(PaymentStatus.FREE);
 
         return enrollmentMapper.toEnrollmentResponse(enrollmentRepository.save(enrollment));
     }

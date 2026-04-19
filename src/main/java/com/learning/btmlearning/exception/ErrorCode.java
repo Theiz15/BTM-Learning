@@ -52,6 +52,8 @@ public enum ErrorCode {
     CLOUDINARY_UPLOAD_FAILED(1017, "Cloudinary upload failed", HttpStatus.BAD_REQUEST),
     THUMBNAIL_INVALID_MIME_TYPE(1018, "Thumbnail file type is not supported", HttpStatus.BAD_REQUEST),
     THUMBNAIL_FILE_TOO_LARGE(1019, "Thumbnail file is too large", HttpStatus.BAD_REQUEST),
+    CODE_ALREADY_EXIST(1033,"Voucher code is ready exist" , HttpStatus.NOT_FOUND)
+    VOUCHER_NOT_FOUND(1032,"Voucher is not found" , HttpStatus.NOT_FOUND),
     ;
 
     ErrorCode(int errorCode, String errorMsg, HttpStatusCode statusCode) {

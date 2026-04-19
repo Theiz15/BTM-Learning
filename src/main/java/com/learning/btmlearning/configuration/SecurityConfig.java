@@ -123,20 +123,17 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173"
+                "http://localhost:5173","http://localhost:5174"
         ));
 
-        // Hoặc nếu muốn cho phép TẤT CẢ (chỉ dùng lúc dev, không khuyên dùng trên Production):
 //         configuration.setAllowedOriginPatterns(List.of("*"));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "x-goog-api-key"));
 
-        // 4. Cực kỳ quan trọng: Cho phép trình duyệt đính kèm Cookie hoặc Header xác thực
         configuration.setAllowCredentials(true);
 
-        // 5. Cấu hình này áp dụng cho toàn bộ API (/**)
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

@@ -23,12 +23,10 @@ public class SecurityUtil {
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        // Kiểm tra xem request này có được xác thực chưa (tránh lỗi khi gọi ở public API)
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             log.warn(">>> Cảnh báo: Cố gắng lấy thông tin user nhưng chưa đăng nhập (anonymousUser)");
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
-
         String email = authentication.getName();
 
         return userRepository.findByEmail(email)
