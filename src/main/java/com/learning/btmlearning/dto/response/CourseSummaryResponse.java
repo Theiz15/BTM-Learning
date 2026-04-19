@@ -17,6 +17,8 @@ public class CourseSummaryResponse {
     private String slug;
     private String description;
     private String thumbnailUrl;
+    private LocalDateTime discountEndDate;
+    private BigDecimal originalPrice;
     private BigDecimal price;
     private String level;
     private CourseStatus status;

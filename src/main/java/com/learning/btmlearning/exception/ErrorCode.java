@@ -40,7 +40,9 @@ public enum ErrorCode {
     YOU_ARE_OWN(1028,"You already own this course." , HttpStatus.UNAUTHORIZED),
     AI_SERVER_OVERLOADED(1029,"Ai server overloaded" , HttpStatus.UNAUTHORIZED),
     TOO_MANY_REQUESTS(1030,"Too many request" , HttpStatus.UNAUTHORIZED),
-    CANNOT_CHANGE_ROLE(1031,"You cannot change role yourself" , HttpStatus.UNAUTHORIZED)
+    CANNOT_CHANGE_ROLE(1031,"You cannot change role yourself" , HttpStatus.UNAUTHORIZED) ,
+    VOUCHER_NOT_FOUND(1032,"Voucher is not found" , HttpStatus.NOT_FOUND),
+    CODE_ALREADY_EXIST(1033,"Voucher code is ready exist" , HttpStatus.NOT_FOUND)
     ;
 
     ErrorCode(int errorCode, String errorMsg, HttpStatusCode statusCode) {

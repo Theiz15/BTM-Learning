@@ -1,7 +1,9 @@
 package com.learning.btmlearning.service;
 
+import com.learning.btmlearning.dto.request.CourseDiscountRequest;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
+import com.learning.btmlearning.dto.response.CourseSummaryResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -17,4 +19,6 @@ public interface CourseService {
     Page<CourseResponse> getPendingCourses(Pageable pageable);
     void approveCourse (Long courseId);
     void rejectCourse (Long courseId);
+
+    CourseSummaryResponse updateCourseDiscount(Long courseId, CourseDiscountRequest request);
 }

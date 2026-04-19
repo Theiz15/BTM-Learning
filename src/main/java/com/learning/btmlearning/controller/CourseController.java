@@ -1,8 +1,10 @@
 package com.learning.btmlearning.controller;
 
+import com.learning.btmlearning.dto.request.CourseDiscountRequest;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.ApiResponse;
 import com.learning.btmlearning.dto.response.CourseResponse;
+import com.learning.btmlearning.dto.response.CourseSummaryResponse;
 import com.learning.btmlearning.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("${api.prefix}/courses")
+@RequestMapping("${api.prefix}")
 @RequiredArgsConstructor
 public class CourseController {
     private final CourseService courseService;
@@ -116,5 +118,14 @@ public class CourseController {
                 .build();
 
         return ResponseEntity.ok(apiResponse);
+    }
+    @PatchMapping("/courses/{courseId}/discount")
+    public ApiResponse<CourseSummaryResponse> setCourseDiscount(
+            @PathVariable Long courseId,
+            @RequestBody CourseDiscountRequest request) {
+        return ApiResponse.<CourseSummaryResponse>builder()
+                .message("Apply voucher successfully")
+                .result(courseService.updateCourseDiscount(courseId, request))
+                .build();
     }
 }

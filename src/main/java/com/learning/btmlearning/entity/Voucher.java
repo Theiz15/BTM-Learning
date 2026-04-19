@@ -28,11 +28,13 @@ public class Voucher {
     Integer quantity;
 
     @Column(nullable = false)
-    Integer usedCount;
+    @Builder.Default
+    Integer usedCount = 0;
 
     LocalDateTime startDate;
     LocalDateTime expirationDate;
 
     @Column(nullable = false)
-    Boolean isActive;
+    @Builder.Default
+    Boolean isActive = true;
 }

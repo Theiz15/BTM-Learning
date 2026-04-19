@@ -31,8 +31,8 @@ public class PaymentController {
 
     @PostMapping("/create-url")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Map<String, String>> createPaymentUrl(@RequestParam Long courseId, HttpServletRequest request) {
-        String paymentUrl = paymentService.createPaymentUrl(courseId, request);
+    public ResponseEntity<Map<String, String>> createPaymentUrl(@RequestParam Long courseId ,String code, HttpServletRequest request) {
+        String paymentUrl = paymentService.createPaymentUrl(courseId,code ,request);
         Map<String, String> response = new HashMap<>();
         response.put("url", paymentUrl);
         return ResponseEntity.ok(response);
