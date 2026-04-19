@@ -1,17 +1,14 @@
 package com.learning.btmlearning.mapper;
 
 import com.learning.btmlearning.dto.request.CourseRequest;
+import com.learning.btmlearning.dto.response.CategoryResponse;
 import com.learning.btmlearning.dto.response.CourseResponse;
 import com.learning.btmlearning.dto.response.CourseSummaryResponse;
 import com.learning.btmlearning.dto.response.SectionResponse;
-import com.learning.btmlearning.dto.request.CreateCourseRequest;
-import com.learning.btmlearning.dto.response.CourseDetailResponse;
+import com.learning.btmlearning.entity.Category;
 import com.learning.btmlearning.entity.Course;
 import com.learning.btmlearning.entity.Section;
 import org.mapstruct.*;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingConstants;
 
 @Mapper(
         componentModel = "spring",
@@ -26,10 +23,14 @@ public interface CourseMapper {
     void updateCourse (@MappingTarget Course course, CourseRequest request);
 
     @Mapping(source = "sections", target = "sections", qualifiedByName = "toSectionResponse")
+    @Mapping(target = "category", source = "category", qualifiedByName = "toCategoryResponse")
     CourseResponse toCourseResponse (Course course);
 
     CourseSummaryResponse toCourseSummaryResponse (Course course);
 
     @Named("toSectionResponse")
     SectionResponse toSectionResponse (Section section);
+
+    @Named("toCategoryResponse")
+    CategoryResponse toCategoryResponse (Category category);
 }

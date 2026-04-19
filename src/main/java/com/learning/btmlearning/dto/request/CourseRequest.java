@@ -1,6 +1,7 @@
 package com.learning.btmlearning.dto.request;
 
 import com.learning.btmlearning.constant.CourseStatus;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -18,4 +19,7 @@ public class CourseRequest {
     private int totalStudents;
     private LocalDateTime publishDate;
     private Long fileUploadId;
+
+    @NotNull(message = "Category must be not null!")
+    private Long categoryId;
 }

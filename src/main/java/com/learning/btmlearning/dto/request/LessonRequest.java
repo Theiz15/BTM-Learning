@@ -17,4 +17,5 @@ public class  LessonRequest {
     private Long sectionId;
     private Long fileUploadId;
     private Long quizId;
+    private Long courseId;
 }

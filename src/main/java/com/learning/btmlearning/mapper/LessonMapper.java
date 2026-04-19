@@ -1,13 +1,12 @@
 package com.learning.btmlearning.mapper;
 
 import com.learning.btmlearning.dto.request.LessonRequest;
+import com.learning.btmlearning.dto.request.LessonUpdateRequest;
 import com.learning.btmlearning.dto.response.LessonResponse;
 import com.learning.btmlearning.dto.response.QuizResponse;
 import com.learning.btmlearning.entity.Lesson;
 import com.learning.btmlearning.entity.Quiz;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
+import org.mapstruct.*;
 
 @Mapper(
         componentModel = "spring",
@@ -25,4 +24,7 @@ public interface LessonMapper {
 
         @Named("toQuizResponse")
         QuizResponse toQuizResponse (Quiz quiz);
+
+        @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+        void updateLesson (@MappingTarget Lesson lesson, LessonUpdateRequest request);
 }

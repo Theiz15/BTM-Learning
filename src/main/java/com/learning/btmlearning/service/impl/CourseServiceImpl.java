@@ -5,13 +5,12 @@ import com.learning.btmlearning.dto.request.CourseDiscountRequest;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
 import com.learning.btmlearning.dto.response.CourseSummaryResponse;
-import com.learning.btmlearning.entity.Course;
-import com.learning.btmlearning.entity.CoursePromotion;
-import com.learning.btmlearning.entity.FileUpload;
+import com.learning.btmlearning.entity.*;
 import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.CourseMapper;
 import com.learning.btmlearning.repository.CoursePromotionRepository;
+import com.learning.btmlearning.repository.CategoryRepository;
 import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.repository.FileUploadRepository;
 import com.learning.btmlearning.service.CourseService;
@@ -34,9 +33,12 @@ public class CourseServiceImpl implements CourseService {
     private final FileUploadRepository fileUploadRepository;
     private final SecurityUtil securityUtil;
     private final CoursePromotionRepository coursePromotionRepository;
+    private final CategoryRepository categoryRepository;
 
     @Override
     public CourseResponse createCourse(CourseRequest request) {
+        User user = securityUtil.getCurrentUser();
+
         Course course = courseMapper.toCourse(request);
 
         if (Objects.nonNull(request.getFileUploadId())) {
@@ -47,17 +49,25 @@ public class CourseServiceImpl implements CourseService {
             course.setThumbnailUrl(fileUpload.getFilePath());
         }
 
+        if (Objects.nonNull(request.getCategoryId())) {
+            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(
+                    () -> new AppException(ErrorCode.CATEGORY_NOT_FOUND)
+            );
+
+            course.setCategory(category);
+        }
+
         course.setCreateAt(LocalDateTime.now());
         course.setStatus(CourseStatus.DRAFT);
         course.setOriginalPrice(request.getPrice());
+        course.setInstructor(user);
+
         return courseMapper.toCourseResponse(courseRepository.save(course));
     }
 
     @Override
     public CourseResponse updateCourse(CourseRequest request, Long courseId) {
-        Course course = courseRepository.findById(courseId).orElseThrow(
-                () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
-        );
+        Course course = getCourse(courseId);
 
         courseMapper.updateCourse(course, request);
         course.setUpdateAt(LocalDateTime.now());
@@ -71,9 +81,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public void deleteCourse(Long courseId) {
-        Course course = courseRepository.findById(courseId).orElseThrow(
-                () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
-        );
+        Course course = getCourse(courseId);
 
         course.setStatus(CourseStatus.INACTIVE);
         courseRepository.save(course);
@@ -95,7 +103,13 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public Course findCourse(Long courseId) {
-        return courseRepository.findById(courseId).orElseThrow(
+        return getCourse(courseId);
+    }
+
+    private Course getCourse(Long courseId) {
+        User user = securityUtil.getCurrentUser();
+
+        return courseRepository.findByInstructorIdAndCourseId(user.getId(), courseId).orElseThrow(
                 () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
         );
     }

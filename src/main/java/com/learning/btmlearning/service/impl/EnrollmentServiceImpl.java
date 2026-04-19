@@ -17,6 +17,7 @@ import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.repository.EnrollmentRepository;
 import com.learning.btmlearning.repository.UserRepository;
 import com.learning.btmlearning.service.EnrollmentService;
+import com.learning.btmlearning.utils.SecurityUtil;
 import com.learning.btmlearning.service.NotificationService;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
@@ -41,18 +42,17 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final NotificationService notificationService;
+    private final SecurityUtil securityUtil;
 
     @Override
     @Transactional
     @CacheEvict(value = "recommendations", key = "#userId")
-    public EnrollmentResponse enroll(EnrollmentRequest request, Long userId) {
+    public EnrollmentResponse enroll(EnrollmentRequest request) {
         Enrollment enrollment = enrollmentMapper.toEnrollment(request);
 
-        checkNotEnrolled(userId, request.getCourseId());
+        User user = securityUtil.getCurrentUser();
 
-        User user = (User) userRepository.findById(userId).orElseThrow(
-                () -> new RuntimeException("User not exist")
-        );
+        checkNotEnrolled(user.getId(), request.getCourseId());
 
         Course course = courseRepository.findById(request.getCourseId()).orElseThrow(
                 () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
@@ -84,12 +84,14 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     }
 
     @Override
-    public EnrollmentResponse cancelEnroll(EnrollmentRequest request, Long userId, Long enrollmentId) {
+    public EnrollmentResponse cancelEnroll(EnrollmentRequest request, Long enrollmentId) {
+        User user = securityUtil.getCurrentUser();
+
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId).orElseThrow(
                 () -> new RuntimeException("Enrollment not exist")
         );
 
-        checkOwner(userId, enrollment);
+        checkOwner(user.getId(), enrollment);
 
         if (enrollment.getStatus() == EnrollmentStatus.COMPLETED) {
             throw new RuntimeException("Enrollment is already completed");
@@ -105,22 +107,26 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     }
 
     @Override
-    public EnrollmentResponse getById(Long userId, Long enrollmentId) {
+    public EnrollmentResponse getById(Long enrollmentId) {
+        User user = securityUtil.getCurrentUser();
+
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId).orElseThrow(
                 () -> new RuntimeException("Enrollment not exist")
         );
-        checkOwner(userId, enrollment);
+        checkOwner(user.getId(), enrollment);
 
         return enrollmentMapper.toEnrollmentResponse(enrollment);
     }
 
     @Override
-    public EnrollmentResponse reactivateEnroll(Long enrollmentId, Long userId) {
+    public EnrollmentResponse reactivateEnroll(Long enrollmentId) {
+        User user = securityUtil.getCurrentUser();
+
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId).orElseThrow(
                 () -> new RuntimeException("Enrollment not exist")
         );
 
-        checkOwner(userId, enrollment);
+        checkOwner(user.getId(), enrollment);
 
         if (enrollment.getStatus() != EnrollmentStatus.CANCELLED) {
             throw new IllegalStateException("Chỉ có thể kích hoạt lại enrollment đã huỷ");

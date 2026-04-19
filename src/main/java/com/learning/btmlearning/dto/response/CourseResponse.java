@@ -1,7 +1,6 @@
 package com.learning.btmlearning.dto.response;
 
 import com.learning.btmlearning.constant.CourseStatus;
-import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -26,5 +25,7 @@ public class CourseResponse {
     private LocalDateTime publishDate;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
+
     private List<SectionResponse> sections;
+    private CategoryResponse category;
 }

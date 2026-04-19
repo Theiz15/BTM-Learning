@@ -31,8 +31,8 @@ public class LessonController {
     }
 
     @GetMapping("/progress/lesson/{lessonId}")
-    public ResponseEntity<ApiResponse<LessonProgressResponse>> getOrCreateLessonProgress(@PathVariable Long lessonId, Long userId) {
-        LessonProgressResponse result = lessonService.getOrCreate(userId, lessonId);
+    public ResponseEntity<ApiResponse<LessonProgressResponse>> getOrCreateLessonProgress(@PathVariable Long lessonId) {
+        LessonProgressResponse result = lessonService.getOrCreate(lessonId);
 
         ApiResponse<LessonProgressResponse> apiResponse = ApiResponse.<LessonProgressResponse>builder()
                 .message("Tracking lesson successfully")
@@ -43,8 +43,8 @@ public class LessonController {
     }
 
     @PostMapping("/lesson/update-progress")
-    public ResponseEntity<ApiResponse<LessonProgressResponse>> updateProgress(Long userId, @RequestBody @Valid UpdateProgressRequest request) {
-        LessonProgressResponse result = lessonService.updateProgress(userId, request);
+    public ResponseEntity<ApiResponse<LessonProgressResponse>> updateProgress(@RequestBody @Valid UpdateProgressRequest request) {
+        LessonProgressResponse result = lessonService.updateProgress(request);
 
         ApiResponse<LessonProgressResponse> apiResponse = ApiResponse.<LessonProgressResponse>builder()
                 .message("Lesson progress successfully updated")
@@ -55,11 +55,9 @@ public class LessonController {
     }
 
     @GetMapping("/courses/progress/{courseId}")
-    public ResponseEntity<ApiResponse<CourseProgressResponse>> getCourseProgress(
-            Long userId,
-            @PathVariable Long courseId) {
+    public ResponseEntity<ApiResponse<CourseProgressResponse>> getCourseProgress(@PathVariable Long courseId) {
 
-        CourseProgressResponse result = lessonService.getCourseProgress(userId, courseId);
+        CourseProgressResponse result = lessonService.getCourseProgress(courseId);
 
         ApiResponse<CourseProgressResponse> apiResponse = ApiResponse.<CourseProgressResponse>builder()
                 .message("CourseProgress successfully retrieved")
