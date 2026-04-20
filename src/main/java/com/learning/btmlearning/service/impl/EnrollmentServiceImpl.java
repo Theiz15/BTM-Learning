@@ -15,7 +15,6 @@ import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.EnrollmentMapper;
 import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.repository.EnrollmentRepository;
-import com.learning.btmlearning.repository.UserRepository;
 import com.learning.btmlearning.service.EnrollmentService;
 import com.learning.btmlearning.utils.SecurityUtil;
 import com.learning.btmlearning.service.NotificationService;
@@ -23,6 +22,7 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,17 +36,17 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final EnrollmentMapper enrollmentMapper;
-    private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
 
     @Override
     @Transactional
-    @CacheEvict(value = "recommendations", key = "#userId")
+    @CacheEvict(value = "recommendations", key = "#result.userId")
     public EnrollmentResponse enroll(EnrollmentRequest request) {
         Enrollment enrollment = enrollmentMapper.toEnrollment(request);
 
@@ -73,12 +73,16 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
 
-        notificationService.notifyUser(
-                user.getId(),
-                "Enrollment Confirmed",
-                "You have successfully enrolled in the course '" + course.getTitle() + "'. Start learning anytime from your dashboard.",
-                NotificationType.ENROLLMENT_CONFIRMED
-        );
+        try {
+            notificationService.notifyUser(
+                    user.getId(),
+                    "Enrollment Confirmed",
+                    "You have successfully enrolled in the course '" + course.getTitle() + "'.",
+                    NotificationType.ENROLLMENT_CONFIRMED
+            );
+        } catch (Exception e) {
+            log.error("Failed to send notification", e);
+        }
 
         return enrollmentMapper.toEnrollmentResponse(savedEnrollment);
     }

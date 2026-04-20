@@ -1,6 +1,7 @@
 package com.learning.btmlearning.dto.response;
 
 import com.learning.btmlearning.constant.PaymentStatus;
+import com.learning.btmlearning.entity.Enrollment;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,4 +16,5 @@ public class EnrollmentResponse {
     private LocalDateTime expiredAt;
     private LocalDateTime completedAt;
     private CourseResponse course;
+    private Long userId;
 }

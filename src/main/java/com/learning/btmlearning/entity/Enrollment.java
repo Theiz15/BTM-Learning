@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,6 +44,7 @@ public class Enrollment {
 
     private EnrollmentStatus status;
 
+    @CreationTimestamp
     private LocalDateTime enrolledAt;
     private LocalDateTime completedAt;
 }
