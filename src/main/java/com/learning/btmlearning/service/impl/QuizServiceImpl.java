@@ -106,9 +106,12 @@ public class QuizServiceImpl implements QuizService {
         );
 
         List<QuizQuestion> quizQuestions = quizQuestionRepository.findAllByQuizIdWithDetails(quizId);
-        quiz.setQuestions(quizQuestions);
 
         QuizResponse quizResponse = quizMapper.toQuizResponse(quiz);
+        quizResponse.setQuestions(quizQuestions.stream()
+                .map(quizMapper::toQuizQuestionResponse)
+                .toList());
+        
         quizResponse.setTotalQuestions(quizQuestions.size());
 
         int totalScore = quizQuestions.stream()
@@ -119,6 +122,37 @@ public class QuizServiceImpl implements QuizService {
         quizResponse.setTotalScore(totalScore);
 
         return quizResponse;
+    }
+
+    @Override
+    @Transactional
+    public QuizResponse getQuizByLessonId(Long lessonId) {
+        Quiz quiz = quizRepository.findFirstByLessonIdOrderByIdDesc(lessonId)
+                .orElseGet(() -> recoverQuizBindingForLesson(lessonId)
+                        .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND)));
+
+        return getQuiz(quiz.getId());
+    }
+
+    private Optional<Quiz> recoverQuizBindingForLesson(Long lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId).orElse(null);
+        if (lesson == null) {
+            return Optional.empty();
+        }
+
+        String lessonTitle = lesson.getTitle() == null ? "" : lesson.getTitle().trim();
+        if (lessonTitle.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Optional<Quiz> orphanQuiz = quizRepository.findFirstByLessonIsNullAndTitleIgnoreCaseOrderByIdDesc(lessonTitle);
+        if (orphanQuiz.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Quiz quiz = orphanQuiz.get();
+        quiz.setLesson(lesson);
+        return Optional.of(quizRepository.save(quiz));
     }
 
     @Override
@@ -160,8 +194,9 @@ public class QuizServiceImpl implements QuizService {
                 .collect(Collectors.toMap(Answer::getId, a -> a));
 
         // 3. map answer
+        List<AnswerAttemptRequest> submittedAnswers = request.getAnswers() != null ? request.getAnswers() : new ArrayList<>();
         List<AttemptAnswer> attemptAnswers = mapToAttemptAnswers(
-                request.getAnswers(), attempt, questionMap, answerMap
+                submittedAnswers, attempt, questionMap, answerMap
         );
 
         attempt.setAttemptAnswers(attemptAnswers);
@@ -213,7 +248,7 @@ public class QuizServiceImpl implements QuizService {
             aa.setEssayAnswer(req.getEssayAnswer());
 
             return aa;
-        }).toList();
+        }).collect(Collectors.toList());
     }
 
     private List<Question> fetchRandomQuestions(QuizRequest.RandomQuestionConfig config) {

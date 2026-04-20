@@ -38,6 +38,8 @@ public class CategoryService {
         category.setName(request.getName());
         category.setSlug(generateUniqueSlug(request.getName(), null));
         category.setDescription(request.getDescription());
+        category.setIconUrl(sanitizeText(request.getIconUrl()));
+        category.setParentCategory(resolveParentCategory(request.getParentId(), null));
         category.setIsActive(true);
 
         category = categoryRepository.save(category);
@@ -68,6 +70,8 @@ public class CategoryService {
         category.setName(request.getName());
         category.setSlug(generateUniqueSlug(request.getName(), category.getId()));
         category.setDescription(request.getDescription());
+        category.setIconUrl(sanitizeText(request.getIconUrl()));
+        category.setParentCategory(resolveParentCategory(request.getParentId(), category.getId()));
         if (request.getIsActive() != null) {
             category.setIsActive(request.getIsActive());
         }
@@ -89,15 +93,51 @@ public class CategoryService {
     }
 
     private CategoryResponse mapToResponse(Category category) {
+        Category parent = category.getParentCategory();
+
         return CategoryResponse.builder()
                 .id(category.getId())
                 .name(category.getName())
                 .slug(category.getSlug())
                 .description(category.getDescription())
+                .iconUrl(category.getIconUrl())
+                .parentId(parent == null ? null : parent.getId())
+                .parentName(parent == null ? null : parent.getName())
                 .isActive(category.getIsActive())
                 .createdAt(category.getCreatedAt())
                 .updatedAt(category.getUpdatedAt())
                 .build();
+    }
+
+    private Category resolveParentCategory(Long parentId, Long currentCategoryId) {
+        if (parentId == null) {
+            return null;
+        }
+
+        Category parentCategory = findCategory(parentId);
+
+        if (currentCategoryId != null && currentCategoryId.equals(parentCategory.getId())) {
+            throw new AppException(ErrorCode.INVALID_KEY);
+        }
+
+        Category cursor = parentCategory;
+        while (cursor != null) {
+            if (currentCategoryId != null && currentCategoryId.equals(cursor.getId())) {
+                throw new AppException(ErrorCode.INVALID_KEY);
+            }
+            cursor = cursor.getParentCategory();
+        }
+
+        return parentCategory;
+    }
+
+    private String sanitizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private String generateUniqueSlug(String name, Long categoryId) {

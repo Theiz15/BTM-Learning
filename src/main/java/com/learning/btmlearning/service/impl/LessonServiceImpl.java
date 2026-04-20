@@ -45,6 +45,7 @@ public class LessonServiceImpl implements LessonService {
     private final CourseRepository courseRepository;
     private final SecurityUtil securityUtil;
 
+    @Transactional
     @Override
     public LessonResponse createLesson(LessonRequest request) {
         Lesson lesson = lessonMapper.toLesson(request);
@@ -72,6 +73,7 @@ public class LessonServiceImpl implements LessonService {
         return lessonMapper.toLessonResponse(lessonRepository.save(lesson));
     }
 
+    @Transactional
     @Override
     public LessonResponse updateLesson(LessonUpdateRequest request, Long lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(
@@ -97,6 +99,7 @@ public class LessonServiceImpl implements LessonService {
         return lessonMapper.toLessonResponse(lessonRepository.save(lesson));
     }
 
+    @Transactional
     @Override
     public void deleteLesson(Long lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(
@@ -151,6 +154,7 @@ public class LessonServiceImpl implements LessonService {
                 .findByEnrollmentIdAndLessonId(enrollment.getId(), lesson.getId())
                 .orElseGet(() -> {
                     LessonProgress p = new LessonProgress();
+                    p.setUser(user);
                     p.setEnrollment(enrollment);
                     p.setLesson(lesson);
                     return p;
@@ -325,7 +329,7 @@ public class LessonServiceImpl implements LessonService {
                 );
                 lesson.setDocumentUrl(fileUpload.getFilePath());
                 lesson.setVideoUrl(null);
-                lesson.setQuiz(null);
+                clearLessonQuizLinks(lesson);
             }
             case VIDEO -> {
                 if (fileUploadId == null) {
@@ -337,21 +341,49 @@ public class LessonServiceImpl implements LessonService {
                 );
                 lesson.setVideoUrl(fileUpload.getFilePath());
                 lesson.setDocumentUrl(null);
-                lesson.setQuiz(null);
+                clearLessonQuizLinks(lesson);
             }
             case QUIZ -> {
                 if (quizId == null) {
                     throw new AppException(ErrorCode.QUIZ_NOT_FOUND);
                 }
 
-                lesson.setQuiz(quizRepository.findById(quizId).orElseThrow(
-                        () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
-                ));
+                Quiz quiz = quizRepository.findById(quizId)
+                        .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
+
+                clearLessonQuizLinks(lesson);
+
+                Lesson previousLesson = quiz.getLesson();
+                if (previousLesson != null
+                        && !Objects.equals(previousLesson.getId(), lesson.getId())
+                        && previousLesson.getQuizzes() != null) {
+                    previousLesson.getQuizzes().removeIf(existingQuiz -> Objects.equals(existingQuiz.getId(), quiz.getId()));
+                }
+
+                quiz.setLesson(lesson);
+                ensureLessonQuizList(lesson).add(quiz);
                 lesson.setDocumentUrl(null);
                 lesson.setVideoUrl(null);
             }
             default -> throw new IllegalStateException("Unexpected value: " + lessonType);
         }
+    }
+
+    private List<Quiz> ensureLessonQuizList(Lesson lesson) {
+        if (lesson.getQuizzes() == null) {
+            lesson.setQuizzes(new ArrayList<>());
+        }
+        return lesson.getQuizzes();
+    }
+
+    private void clearLessonQuizLinks(Lesson lesson) {
+        List<Quiz> quizzes = ensureLessonQuizList(lesson);
+        for (Quiz existingQuiz : quizzes) {
+            if (existingQuiz != null && existingQuiz.getLesson() != null) {
+                existingQuiz.setLesson(null);
+            }
+        }
+        quizzes.clear();
     }
 
     private void assertCanManageCourse(Course course) {

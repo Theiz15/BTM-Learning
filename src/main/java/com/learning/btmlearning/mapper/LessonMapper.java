@@ -3,9 +3,7 @@ package com.learning.btmlearning.mapper;
 import com.learning.btmlearning.dto.request.LessonRequest;
 import com.learning.btmlearning.dto.request.LessonUpdateRequest;
 import com.learning.btmlearning.dto.response.LessonResponse;
-import com.learning.btmlearning.dto.response.QuizResponse;
 import com.learning.btmlearning.entity.Lesson;
-import com.learning.btmlearning.entity.Quiz;
 import org.mapstruct.*;
 
 @Mapper(
@@ -16,16 +14,12 @@ import org.mapstruct.*;
 )
 public interface LessonMapper {
         @Mapping(target = "section", ignore = true)
-        @Mapping(target = "quiz", ignore = true)
+        @Mapping(target = "quizzes", ignore = true)
         Lesson toLesson (LessonRequest request);
 
         @Mapping(target = "sectionId", source = "section.id")
         @Mapping(target = "courseId", source = "course.id")
-        @Mapping(target = "quizResponse", source = "quiz", qualifiedByName = "toQuizResponse")
         LessonResponse toLessonResponse (Lesson lesson);
-
-        @Named("toQuizResponse")
-        QuizResponse toQuizResponse (Quiz quiz);
 
         @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
         void updateLesson (@MappingTarget Lesson lesson, LessonUpdateRequest request);

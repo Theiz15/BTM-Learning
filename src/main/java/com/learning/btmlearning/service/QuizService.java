@@ -8,6 +8,7 @@ import com.learning.btmlearning.dto.response.QuizResponse;
 public interface QuizService {
     QuizResponse createQuiz (QuizRequest request);
     QuizResponse getQuiz (Long quizId);
+    QuizResponse getQuizByLessonId(Long lessonId);
     void deleteQuiz (Long quizId);
     QuizAttemptResponse submitQuiz(Long userId, QuizAttemptRequest request);
 }

@@ -24,6 +24,7 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
 import java.net.URLEncoder;
@@ -114,8 +115,13 @@ public class PaymentService {
             }
 
             log.info(">>> Khách hàng {} đã nhận khóa học {} MIỄN PHÍ thành công!", user.getEmail(), course.getTitle());
-//            response.sendRedirect(frontendUrl + "?status=success&txnRef=" + txnRef);
-            return frontendReturnUrl + "?status=success&txnRef=" + payment.getId() + "&isFree=true";
+            return UriComponentsBuilder.fromUriString(frontendReturnUrl)
+                    .queryParam("status", "success")
+                    .queryParam("txnRef", payment.getId())
+                    .queryParam("courseId", course.getId())
+                    .queryParam("isFree", true)
+                    .build()
+                    .toUriString();
         }
 
         long vnpAmount = finalAmount
@@ -226,6 +232,22 @@ public class PaymentService {
 
             log.info(">>> Giao dịch {} THẤT BẠI. Mã lỗi VNPay: {}", paymentId, responseCode);
             return false;
+        }
+    }
+
+    public Long getCourseIdByPaymentId(String txnRef) {
+        if (txnRef == null || txnRef.isBlank()) {
+            return null;
+        }
+
+        try {
+            Long paymentId = Long.parseLong(txnRef);
+            return paymentRepository.findById(paymentId)
+                    .map(Payment::getCourse)
+                    .map(Course::getId)
+                    .orElse(null);
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 }

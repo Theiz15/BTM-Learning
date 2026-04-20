@@ -39,7 +39,7 @@ public class Question {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
     private List<QuizQuestion> quizzes;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)

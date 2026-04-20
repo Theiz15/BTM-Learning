@@ -59,6 +59,18 @@ public class QuizController {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @GetMapping("/quiz/lesson/{lessonId}")
+    public ResponseEntity<ApiResponse<QuizResponse>> getQuizByLesson(@PathVariable Long lessonId) {
+        QuizResponse result = quizService.getQuizByLessonId(lessonId);
+
+        ApiResponse<QuizResponse> apiResponse = ApiResponse.<QuizResponse>builder()
+                .message("Quiz retrieved by lesson")
+                .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
     @DeleteMapping("/quiz/{quizId}")
     @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteQuiz (@PathVariable Long quizId) {

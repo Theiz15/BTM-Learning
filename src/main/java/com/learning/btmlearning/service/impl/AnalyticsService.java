@@ -87,7 +87,10 @@ public class AnalyticsService {
                 .count();
 
         long totalLearners = enrollments.stream()
-                .map(enrollment -> enrollment.getUser().getId())
+                .map(Enrollment::getUser)
+                .filter(user -> user != null)
+                .map(User::getId)
+                .filter(id -> id != null)
                 .distinct()
                 .count();
 
@@ -157,16 +160,22 @@ public class AnalyticsService {
             List<Payment> payments,
             int topLimit
     ) {
-        Map<Long, String> courseTitleMap = courses.stream().collect(Collectors.toMap(
-                Course::getId,
-                Course::getTitle,
-                (left, right) -> left
-        ));
+        Map<Long, String> courseTitleMap = courses.stream()
+                .filter(course -> course != null)
+                .filter(course -> course.getId() != null)
+                .collect(Collectors.toMap(
+                        Course::getId,
+                        course -> Optional.ofNullable(course.getTitle()).orElse("Unknown Course"),
+                        (left, right) -> left
+                ));
 
-        Map<Long, Long> enrollmentCountMap = enrollments.stream().collect(Collectors.groupingBy(
-                enrollment -> enrollment.getCourse().getId(),
-                Collectors.counting()
-        ));
+        Map<Long, Long> enrollmentCountMap = enrollments.stream()
+                .filter(enrollment -> enrollment != null)
+                .filter(enrollment -> enrollment.getCourse() != null && enrollment.getCourse().getId() != null)
+                .collect(Collectors.groupingBy(
+                        enrollment -> enrollment.getCourse().getId(),
+                        Collectors.counting()
+                ));
 
         Map<Long, BigDecimal> revenueByCourseMap = new LinkedHashMap<>();
         for (Payment payment : payments) {
@@ -174,8 +183,13 @@ public class AnalyticsService {
                 continue;
             }
 
-            Long courseId = payment.getCourse().getId();
-            String courseTitle = payment.getCourse().getTitle();
+            Course course = payment.getCourse();
+            if (course == null || course.getId() == null) {
+                continue;
+            }
+
+            Long courseId = course.getId();
+            String courseTitle = course.getTitle();
             courseTitleMap.putIfAbsent(courseId, courseTitle);
 
             BigDecimal amount = Optional.ofNullable(payment.getAmount()).orElse(BigDecimal.ZERO);
@@ -241,7 +255,7 @@ public class AnalyticsService {
     }
 
     private boolean isSuccessfulPayment(Payment payment) {
-        return payment.getStatus() == PaymentStatus.SUCCESS;
+                return payment != null && payment.getStatus() == PaymentStatus.SUCCESS;
     }
 
     private String resolveUserName(User user) {
