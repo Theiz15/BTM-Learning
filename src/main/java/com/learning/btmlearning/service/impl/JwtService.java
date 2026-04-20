@@ -32,7 +32,7 @@ public class JwtService {
 
     public String generateAccessToken(User user) {
         Instant now = Instant.now();
-        Instant expiresAt = now.plusSeconds(accessExpiration);
+        Instant expiresAt = now.plusMillis(accessExpiration);
 
         // BẮT BUỘC: Chỉ định thuật toán trong Header
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS512).build();
@@ -53,7 +53,7 @@ public class JwtService {
 
     public String generateRefreshToken(User user) {
         Instant now = Instant.now();
-        Instant expiresAt = now.plusSeconds(refreshExpiration);
+        Instant expiresAt = now.plusMillis(refreshExpiration);
 
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS512).build();
 

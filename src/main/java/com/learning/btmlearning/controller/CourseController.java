@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +24,7 @@ public class CourseController {
     private final CourseService courseService;
 
     @PostMapping("/courses")
+        @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> createCourse(@RequestBody CourseRequest request) {
         CourseResponse result = courseService.createCourse(request);
 
@@ -47,6 +49,7 @@ public class CourseController {
     }
 
     @PutMapping("/course/{courseId}")
+        @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> updateCourse(@PathVariable Long courseId, @RequestBody CourseRequest request) {
         CourseResponse result = courseService.updateCourse(request, courseId);
 
@@ -59,6 +62,7 @@ public class CourseController {
     }
 
     @DeleteMapping("/course/{courseId}")
+        @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteCourse(@PathVariable Long courseId) {
         courseService.deleteCourse(courseId);
 
@@ -82,11 +86,12 @@ public class CourseController {
     }
 
     @GetMapping("/pending")
+        @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<CourseResponse>>> getPendingCourses(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("updatedAt").ascending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("updateAt").descending());
 
         Page<CourseResponse> result = courseService.getPendingCourses(pageable);
 
@@ -99,6 +104,7 @@ public class CourseController {
     }
 
     @PatchMapping("/{id}/approve")
+        @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> approveCourse(@PathVariable Long id) {
         courseService.approveCourse(id);
 
@@ -110,6 +116,7 @@ public class CourseController {
     }
 
     @PatchMapping("/{id}/reject")
+        @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> rejectCourse(@PathVariable Long id) {
         courseService.rejectCourse(id);
 
@@ -120,6 +127,7 @@ public class CourseController {
         return ResponseEntity.ok(apiResponse);
     }
     @PatchMapping("/courses/{courseId}/discount")
+        @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ApiResponse<CourseSummaryResponse> setCourseDiscount(
             @PathVariable Long courseId,
             @RequestBody CourseDiscountRequest request) {

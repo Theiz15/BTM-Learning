@@ -1,5 +1,6 @@
 package com.learning.btmlearning.service.impl;
 
+import com.learning.btmlearning.constant.UserRole;
 import com.learning.btmlearning.dto.request.AnswerAttemptRequest;
 import com.learning.btmlearning.dto.request.QuizAttemptRequest;
 import com.learning.btmlearning.dto.request.QuizRequest;
@@ -11,6 +12,7 @@ import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.QuizMapper;
 import com.learning.btmlearning.repository.*;
 import com.learning.btmlearning.service.QuizService;
+import com.learning.btmlearning.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,15 +32,22 @@ public class QuizServiceImpl implements QuizService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final QuizQuestionRepository quizQuestionRepository;
     private final AnswerRepository answerRepository;
+    private final SecurityUtil securityUtil;
 
     @Override
     public QuizResponse createQuiz (QuizRequest request) {
         Quiz quiz = quizMapper.toQuiz(request);
+        List<QuizRequest.ManualQuestionItem> manualQuestions =
+            request.getManualQuestions() == null ? List.of() : request.getManualQuestions();
+        List<QuizRequest.RandomQuestionConfig> randomConfigs =
+            request.getRandomConfigs() == null ? List.of() : request.getRandomConfigs();
 
         if (Objects.nonNull(request.getLessonId())) {
             Lesson lesson = lessonRepository.findById(request.getLessonId()).orElseThrow(
                     () -> new AppException(ErrorCode.LESSON_NOT_FOUND)
             );
+
+            assertCanManageCourse(lesson.getCourse());
 
             quiz.setLesson(lesson);
         }
@@ -46,8 +55,8 @@ public class QuizServiceImpl implements QuizService {
         Map<Long, QuizQuestion> questionMap = new LinkedHashMap<>();
 
         // Handle select question
-        if (!request.getManualQuestions().isEmpty()) {
-            for (QuizRequest.ManualQuestionItem item : request.getManualQuestions()) {
+        if (!manualQuestions.isEmpty()) {
+            for (QuizRequest.ManualQuestionItem item : manualQuestions) {
                 Question question = questionRepository.findById(item.getQuestionId()).orElseThrow(
                         () -> new AppException(ErrorCode.QUESTION_NOT_FOUND)
                 );
@@ -57,10 +66,10 @@ public class QuizServiceImpl implements QuizService {
         }
 
         // Random question
-        if (!request.getRandomConfigs().isEmpty()) {
+        if (!randomConfigs.isEmpty()) {
             int autoOrderIndex = questionMap.size();
 
-            for (QuizRequest.RandomQuestionConfig item : request.getRandomConfigs()) {
+            for (QuizRequest.RandomQuestionConfig item : randomConfigs) {
                 List<Question> randomQuestion = fetchRandomQuestions(item);
 
                 if (randomQuestion.isEmpty()) {
@@ -73,7 +82,7 @@ public class QuizServiceImpl implements QuizService {
             }
         }
 
-        if (!questionMap.isEmpty()) {
+        if (questionMap.isEmpty()) {
             throw new AppException(ErrorCode.INVALID_STOCK_QUESTION);
         }
 
@@ -90,12 +99,26 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public QuizResponse getQuiz(Long quizId) {
         Quiz quiz = quizRepository.findById(quizId).orElseThrow(
                 () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
         );
 
-        return quizMapper.toQuizResponse(quiz);
+        List<QuizQuestion> quizQuestions = quizQuestionRepository.findAllByQuizIdWithDetails(quizId);
+        quiz.setQuestions(quizQuestions);
+
+        QuizResponse quizResponse = quizMapper.toQuizResponse(quiz);
+        quizResponse.setTotalQuestions(quizQuestions.size());
+
+        int totalScore = quizQuestions.stream()
+            .map(QuizQuestion::getScore)
+            .filter(Objects::nonNull)
+            .mapToInt(Integer::intValue)
+            .sum();
+        quizResponse.setTotalScore(totalScore);
+
+        return quizResponse;
     }
 
     @Override
@@ -103,6 +126,10 @@ public class QuizServiceImpl implements QuizService {
         Quiz quiz = quizRepository.findById(quizId).orElseThrow(
                 () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
         );
+
+        if (quiz.getLesson() != null) {
+            assertCanManageCourse(quiz.getLesson().getCourse());
+        }
 
         quizRepository.delete(quiz);
     }
@@ -205,5 +232,16 @@ public class QuizServiceImpl implements QuizService {
         quizQuestion.setSortOrder(orderIndex);
 
         return quizQuestion;
+    }
+
+    private void assertCanManageCourse(Course course) {
+        User currentUser = securityUtil.getCurrentUser();
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        if (course == null || course.getInstructor() == null || !Objects.equals(course.getInstructor().getId(), currentUser.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
     }
 }

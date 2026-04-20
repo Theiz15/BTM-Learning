@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 
 @Data
 public class LessonResponse {
+    private Long id;
+    private Long sectionId;
+    private Long courseId;
     private String title;
     private int orderIndex;
     private LessonType lessonType;

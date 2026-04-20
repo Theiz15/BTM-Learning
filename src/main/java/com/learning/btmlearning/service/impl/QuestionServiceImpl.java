@@ -113,7 +113,7 @@ public class QuestionServiceImpl implements QuestionService {
             List<Predicate> predicates = new ArrayList<>();
 
             if (Objects.nonNull(request.getKeyword())) {
-                predicates.add(cb.like(root.get("keyword"), "%" + request.getKeyword() + "%"));
+                predicates.add(cb.like(cb.lower(root.get("content")), "%" + request.getKeyword().toLowerCase() + "%"));
             }
 
             if (Objects.nonNull(request.getDifficulty())) {

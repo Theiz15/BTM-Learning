@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +19,7 @@ public class QuestionController {
     private final QuestionService questionService;
 
     @PostMapping("/questions")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<QuestionResponse>> createQuestion(@RequestBody @Valid QuestionRequest questionRequest) {
         QuestionResponse result = questionService.addQuestion(questionRequest);
 
@@ -30,6 +32,7 @@ public class QuestionController {
     }
 
     @DeleteMapping("/questions/{questionId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteQuestion(@PathVariable Long questionId) {
         questionService.deleteQuestion(questionId);
 
@@ -42,6 +45,7 @@ public class QuestionController {
     }
 
     @PostMapping("/questions/search")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<Page<QuestionResponse>>> searchQuestion(@RequestBody @Valid SearchQuestionRequest request) {
         Page<QuestionResponse> questions = questionService.getQuestions(request);
 

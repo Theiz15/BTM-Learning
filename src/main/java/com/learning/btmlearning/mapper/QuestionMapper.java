@@ -8,7 +8,10 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 @Mapper(
-        componentModel = "spring"
+    componentModel = "spring",
+    uses = {
+        AnswerMapper.class
+    }
 )
 public interface QuestionMapper {
     @Mapping(target = "quizzes", ignore = true)

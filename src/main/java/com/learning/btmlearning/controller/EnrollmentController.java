@@ -5,7 +5,6 @@ import com.learning.btmlearning.dto.request.FilterEnrollmentRequest;
 import com.learning.btmlearning.dto.response.ApiResponse;
 import com.learning.btmlearning.dto.response.EnrollmentResponse;
 import com.learning.btmlearning.service.EnrollmentService;
-import com.learning.btmlearning.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1")
 public class EnrollmentController {
     private final EnrollmentService enrollmentService;
-    private final SecurityUtil securityUtil;
 
     @PostMapping("/enrollments")
     public ResponseEntity<ApiResponse<EnrollmentResponse>> enroll(@RequestBody EnrollmentRequest request) {
@@ -68,7 +66,7 @@ public class EnrollmentController {
     }
 
     @PostMapping("/search/enrollment")
-    public ResponseEntity<ApiResponse<Page<EnrollmentResponse>>> getAllEnrollments (FilterEnrollmentRequest request) {
+    public ResponseEntity<ApiResponse<Page<EnrollmentResponse>>> getAllEnrollments (@RequestBody FilterEnrollmentRequest request) {
         Page<EnrollmentResponse> result = enrollmentService.getAllEnrollments(request);
 
         ApiResponse<Page<EnrollmentResponse>> apiResponse = ApiResponse.<Page<EnrollmentResponse>>builder()

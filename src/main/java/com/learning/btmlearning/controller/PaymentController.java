@@ -25,13 +25,17 @@ public class PaymentController {
 
     PaymentService paymentService;
 
-    @Value("${vnpay.return-url}")
+        @Value("${vnpay.frontend-return-url}")
             @NonFinal
     String frontendUrl;
 
     @PostMapping("/create-url")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Map<String, String>> createPaymentUrl(@RequestParam Long courseId ,String code, HttpServletRequest request) {
+        public ResponseEntity<Map<String, String>> createPaymentUrl(
+            @RequestParam Long courseId,
+            @RequestParam(required = false) String code,
+            HttpServletRequest request
+        ) {
         String paymentUrl = paymentService.createPaymentUrl(courseId,code ,request);
         Map<String, String> response = new HashMap<>();
         response.put("url", paymentUrl);

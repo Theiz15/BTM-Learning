@@ -6,8 +6,11 @@ import com.learning.btmlearning.dto.response.ApiResponse;
 import com.learning.btmlearning.dto.response.QuizAttemptResponse;
 import com.learning.btmlearning.dto.response.QuizResponse;
 import com.learning.btmlearning.service.QuizService;
+import com.learning.btmlearning.utils.SecurityUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,8 +18,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1")
 public class QuizController {
     private final QuizService quizService;
+    private final SecurityUtil securityUtil;
 
     @PostMapping("/quizzes")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<QuizResponse>> createQuiz(@RequestBody QuizRequest quizRequest) {
         QuizResponse result = quizService.createQuiz(quizRequest);
 
@@ -29,7 +34,9 @@ public class QuizController {
     }
 
     @PostMapping("/quiz/submit")
-    public ResponseEntity<ApiResponse<QuizAttemptResponse>> submitQuiz(Long userId, QuizAttemptRequest request){
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<QuizAttemptResponse>> submitQuiz(@RequestBody @Valid QuizAttemptRequest request){
+        Long userId = securityUtil.getCurrentUser().getId();
         QuizAttemptResponse result = quizService.submitQuiz(userId, request);
 
         ApiResponse<QuizAttemptResponse> apiResponse = ApiResponse.<QuizAttemptResponse>builder()
@@ -53,6 +60,7 @@ public class QuizController {
     }
 
     @DeleteMapping("/quiz/{quizId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteQuiz (@PathVariable Long quizId) {
         quizService.deleteQuiz(quizId);
 

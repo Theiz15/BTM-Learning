@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import org.springframework.data.repository.CrudRepository;
 
 @Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long>, JpaSpecificationExecutor<Enrollment> {
@@ -22,4 +21,10 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long>, J
 
     @Query("SELECT DISTINCT e.course.category.id FROM Enrollment e WHERE e.user.id=:userId")
     List<Long> findEnrolledCategoryIdsByUserId(@Param("userId")Long userId);
+
+    @Query("SELECT e FROM Enrollment e WHERE e.course.instructor.id = :instructorId")
+    List<Enrollment> findAllByInstructorId(@Param("instructorId") Long instructorId);
+
+    @Query("SELECT COUNT(DISTINCT e.user.id) FROM Enrollment e WHERE e.course.instructor.id = :instructorId")
+    long countDistinctLearnersByInstructorId(@Param("instructorId") Long instructorId);
 }

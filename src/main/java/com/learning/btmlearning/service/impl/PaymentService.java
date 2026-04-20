@@ -3,6 +3,7 @@ package com.learning.btmlearning.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learning.btmlearning.configuration.VNPayConfig;
+import com.learning.btmlearning.constant.CourseStatus;
 import com.learning.btmlearning.constant.EnrollmentStatus;
 import com.learning.btmlearning.constant.PaymentStatus;
 import com.learning.btmlearning.entity.*;
@@ -51,11 +52,19 @@ public class PaymentService {
     @Value("${vnpay.return-url}") @NonFinal String vnpReturnUrl;
     @Value("${vnpay.frontend-return-url}") @NonFinal String frontendReturnUrl;
 
+    public String getSecretKey() {
+        return secretKey;
+    }
+
 
     @Transactional
     public String createPaymentUrl(Long courseId, String voucherCode, HttpServletRequest request) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+
+        if (course.getStatus() != CourseStatus.PUBLISHED && course.getStatus() != CourseStatus.ACTIVE) {
+            throw new RuntimeException("Course is not published");
+        }
 
         User user = securityUtil.getCurrentUser();
 
@@ -109,7 +118,7 @@ public class PaymentService {
             return frontendReturnUrl + "?status=success&txnRef=" + payment.getId() + "&isFree=true";
         }
 
-        long vnpAmount = course.getPrice()
+        long vnpAmount = finalAmount
                 .multiply(BigDecimal.valueOf(100))
                 .longValue();
 

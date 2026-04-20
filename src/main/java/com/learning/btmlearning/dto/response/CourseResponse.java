@@ -28,4 +28,5 @@ public class CourseResponse {
 
     private List<SectionResponse> sections;
     private CategoryResponse category;
+    private UserProfile instructor;
 }

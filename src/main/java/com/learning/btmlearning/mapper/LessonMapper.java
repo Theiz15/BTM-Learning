@@ -19,6 +19,8 @@ public interface LessonMapper {
         @Mapping(target = "quiz", ignore = true)
         Lesson toLesson (LessonRequest request);
 
+        @Mapping(target = "sectionId", source = "section.id")
+        @Mapping(target = "courseId", source = "course.id")
         @Mapping(target = "quizResponse", source = "quiz", qualifiedByName = "toQuizResponse")
         LessonResponse toLessonResponse (Lesson lesson);
 

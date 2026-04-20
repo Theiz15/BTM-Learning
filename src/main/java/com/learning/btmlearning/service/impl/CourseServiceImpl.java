@@ -1,6 +1,7 @@
 package com.learning.btmlearning.service.impl;
 
 import com.learning.btmlearning.constant.CourseStatus;
+import com.learning.btmlearning.constant.UserRole;
 import com.learning.btmlearning.dto.request.CourseDiscountRequest;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
@@ -67,7 +68,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseResponse updateCourse(CourseRequest request, Long courseId) {
-        Course course = getCourse(courseId);
+        Course course = getManageableCourse(courseId);
 
         courseMapper.updateCourse(course, request);
         course.setUpdateAt(LocalDateTime.now());
@@ -81,7 +82,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public void deleteCourse(Long courseId) {
-        Course course = getCourse(courseId);
+        Course course = getManageableCourse(courseId);
 
         course.setStatus(CourseStatus.INACTIVE);
         courseRepository.save(course);
@@ -96,18 +97,31 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseResponse getCourseById(Long courseId) {
-        Course course = getCourseAndValidateStatus(courseId) ;
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+
+        if (!isVisibleToCurrentUser(course)) {
+            throw new AppException(ErrorCode.COURSE_NOT_FOUND);
+        }
 
         return courseMapper.toCourseResponse(course);
     }
 
     @Override
     public Course findCourse(Long courseId) {
-        return getCourse(courseId);
+        return courseRepository.findById(courseId).orElseThrow(
+                () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
+        );
     }
 
-    private Course getCourse(Long courseId) {
+    private Course getManageableCourse(Long courseId) {
         User user = securityUtil.getCurrentUser();
+
+        if (user.getRole() == UserRole.ADMIN) {
+            return courseRepository.findById(courseId).orElseThrow(
+                    () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
+            );
+        }
 
         return courseRepository.findByInstructorIdAndCourseId(user.getId(), courseId).orElseThrow(
                 () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
@@ -120,6 +134,8 @@ public class CourseServiceImpl implements CourseService {
         course.setAvgRating((float) rating);
         courseRepository.save(course);
     }
+
+    @Override
     public Page<CourseResponse> getPendingCourses(Pageable pageable) {
         Page<Course> pendingCourses = courseRepository.findByStatus(CourseStatus.PENDING ,pageable) ;
 
@@ -177,5 +193,23 @@ public class CourseServiceImpl implements CourseService {
             throw new RuntimeException("Khóa học không ở trạng thái chờ duyệt (PENDING)");
         }
         return course;
+    }
+
+    private boolean isVisibleToCurrentUser(Course course) {
+        if (course.getStatus() == CourseStatus.ACTIVE || course.getStatus() == CourseStatus.PUBLISHED) {
+            return true;
+        }
+
+        try {
+            User currentUser = securityUtil.getCurrentUser();
+            if (currentUser.getRole() == UserRole.ADMIN) {
+                return true;
+            }
+
+            return course.getInstructor() != null
+                    && Objects.equals(course.getInstructor().getId(), currentUser.getId());
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 }

@@ -54,15 +54,24 @@ public class Course {
     private Category category;
 
     public BigDecimal getActualPrice() {
-        if (this.originalPrice == null || this.originalPrice.compareTo(BigDecimal.ZERO) == 0) {
+        BigDecimal safeOriginalPrice = this.originalPrice == null ? BigDecimal.ZERO : this.originalPrice;
+        BigDecimal safePrice = this.price == null ? BigDecimal.ZERO : this.price;
+
+        boolean hasOriginalPrice = safeOriginalPrice.compareTo(BigDecimal.ZERO) > 0;
+        boolean hasPrice = safePrice.compareTo(BigDecimal.ZERO) > 0;
+
+        if (!hasOriginalPrice && !hasPrice) {
             return BigDecimal.ZERO;
         }
 
-        if (this.price != null &&
-                (this.discountEndDate == null || this.discountEndDate.isAfter(LocalDateTime.now()))) {
-            return this.price;
+        if (hasPrice && (!hasOriginalPrice || this.discountEndDate == null || this.discountEndDate.isAfter(LocalDateTime.now()))) {
+            return safePrice;
         }
 
-        return this.originalPrice;
+        if (hasOriginalPrice) {
+            return safeOriginalPrice;
+        }
+
+        return safePrice;
     }
 }

@@ -11,11 +11,11 @@ import java.util.List;
 @Repository
 public interface QuizQuestionRepository extends JpaRepository<QuizQuestion, Long> {
     @Query("""
-            SELECT qq FROM QuizQuestion qq 
-            JOIN FETCH qq.question q 
-            JOIN FETCH qq.quiz z 
-            WHERE z.id = :quizId 
-            ORDER BY qq.sortOrder ASC
+            SELECT DISTINCT qq FROM QuizQuestion qq
+            JOIN FETCH qq.question q
+            LEFT JOIN FETCH q.answers a
+            WHERE qq.quiz.id = :quizId
+            ORDER BY qq.sortOrder ASC, a.orderIndex ASC
             """)
     List<QuizQuestion> findAllByQuizIdWithDetails(@Param("quizId") Long quizId);
 }

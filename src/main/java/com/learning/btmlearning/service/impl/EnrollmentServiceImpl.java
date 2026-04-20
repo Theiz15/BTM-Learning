@@ -58,7 +58,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
         );
 
-        if (course.getStatus() != CourseStatus.PUBLISHED) {
+        if (course.getStatus() != CourseStatus.PUBLISHED && course.getStatus() != CourseStatus.ACTIVE) {
             throw new RuntimeException("Course is not published");
         }
 

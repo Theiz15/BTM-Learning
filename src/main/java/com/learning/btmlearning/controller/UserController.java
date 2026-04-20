@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -59,6 +60,7 @@ public class UserController {
     }
 
     @GetMapping
+        @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Page<UserAdminResponse>> getUsers(
             @RequestParam(required = false) UserRole role,
             @RequestParam(required = false) Boolean isActive,
@@ -75,6 +77,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/toggle-active")
+        @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> toggleActive(@PathVariable Long id) {
         userService.toggleActive(id);
         return ApiResponse.<Void>builder()
@@ -83,6 +86,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/role")
+        @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> changeRole(
             @PathVariable Long id,
             @RequestBody @Valid ChangeRoleRequest request) {

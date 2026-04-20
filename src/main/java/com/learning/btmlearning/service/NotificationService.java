@@ -1,7 +1,9 @@
 package com.learning.btmlearning.service;
 
 import com.learning.btmlearning.constant.NotificationType;
+import com.learning.btmlearning.constant.UserRole;
 import com.learning.btmlearning.dto.request.NotificationCreationRequest;
+import com.learning.btmlearning.dto.request.NotificationBroadcastRequest;
 import com.learning.btmlearning.dto.response.NotificationResponse;
 import com.learning.btmlearning.entity.Notification;
 import com.learning.btmlearning.entity.User;
@@ -9,6 +11,7 @@ import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.repository.NotificationRepository;
 import com.learning.btmlearning.repository.UserRepository;
+import com.learning.btmlearning.utils.SecurityUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,26 +29,49 @@ public class NotificationService {
     NotificationRepository notificationRepository;
     UserRepository userRepository;
     JavaMailSender mailSender;
+    SecurityUtil securityUtil;
 
     public NotificationResponse createNotification(NotificationCreationRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        Notification notification = new Notification();
-        notification.setUser(user);
-        notification.setTitle(request.getTitle());
-        notification.setMessage(request.getMessage());
-        notification.setType(request.getType());
-        notification.setIsRead(false);
+        Notification notification = saveNotification(user, request.getTitle(), request.getMessage(), request.getType());
 
-        notification = notificationRepository.save(notification);
-        sendNotificationEmail(user.getEmail(), user.getFullName(), request.getTitle(), request.getMessage(), request.getType());
         return mapToResponse(notification);
+    }
+
+    public int broadcast(NotificationBroadcastRequest request) {
+        List<User> recipients = request.getRole() == null
+                ? userRepository.findByIsActiveTrue()
+                : userRepository.findByRoleAndIsActiveTrue(request.getRole());
+
+        for (User user : recipients) {
+            saveNotification(user, request.getTitle(), request.getMessage(), request.getType());
+        }
+
+        return recipients.size();
+    }
+
+    public List<NotificationResponse> getMyNotifications() {
+        User currentUser = securityUtil.getCurrentUser();
+        return getNotificationsByUser(currentUser.getId());
+    }
+
+    public long getMyUnreadCount() {
+        User currentUser = securityUtil.getCurrentUser();
+        return notificationRepository.countByUserIdAndIsReadFalse(currentUser.getId());
     }
 
     public List<NotificationResponse> getNotificationsByUser(Long userId) {
         if (!userRepository.existsById(userId)) {
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
+
+        User currentUser = securityUtil.getCurrentUser();
+        boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
+
+        if (!isAdmin && !currentUser.getId().equals(userId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
@@ -57,6 +83,13 @@ public class NotificationService {
     public NotificationResponse markAsRead(Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+        User currentUser = securityUtil.getCurrentUser();
+        boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
+
+        if (!isAdmin && !notification.getUser().getId().equals(currentUser.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
 
         notification.setIsRead(true);
         notification = notificationRepository.save(notification);
@@ -71,6 +104,19 @@ public class NotificationService {
                 .type(type)
                 .build();
         createNotification(request);
+    }
+
+    private Notification saveNotification(User user, String title, String message, NotificationType type) {
+        Notification notification = new Notification();
+        notification.setUser(user);
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setType(type);
+        notification.setIsRead(false);
+
+        notification = notificationRepository.save(notification);
+        sendNotificationEmail(user.getEmail(), user.getFullName(), title, message, type);
+        return notification;
     }
 
     private void sendNotificationEmail(String toEmail, String fullName, String title, String message, NotificationType type) {

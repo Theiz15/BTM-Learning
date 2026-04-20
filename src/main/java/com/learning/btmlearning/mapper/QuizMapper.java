@@ -18,6 +18,7 @@ public interface QuizMapper {
     @Mapping(target = "questions", ignore = true)
     Quiz toQuiz (QuizRequest request);
 
+    @Mapping(target = "timeLimit", source = "timeLimitMin")
     @Mapping(target = "questions", source = "questions", qualifiedByName = "toQuizQuestionResponse")
     QuizResponse toQuizResponse (Quiz quiz);
 

@@ -13,7 +13,8 @@ import org.mapstruct.*;
 @Mapper(
         componentModel = "spring",
         uses = {
-                SectionMapper.class
+                SectionMapper.class,
+                UserMapper.class
         }
 )
 public interface CourseMapper {
