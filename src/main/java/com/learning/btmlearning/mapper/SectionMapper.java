@@ -1,7 +1,9 @@
 package com.learning.btmlearning.mapper;
 
 import com.learning.btmlearning.dto.request.SectionRequest;
+import com.learning.btmlearning.dto.response.LessonResponse;
 import com.learning.btmlearning.dto.response.SectionResponse;
+import com.learning.btmlearning.entity.Lesson;
 import com.learning.btmlearning.entity.Section;
 import org.mapstruct.*;
 
@@ -19,6 +21,10 @@ public interface SectionMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateSection (@MappingTarget Section section, SectionRequest request);
 
-        @Mapping(target = "courseId", source = "course.id")
+    @Mapping(target = "courseId", source = "course.id")
+    @Mapping(target = "lessons", source = "lessons", qualifiedByName = "toLessonResponse")
     SectionResponse toSectionResponse (Section section);
+
+    @Named("toLessonResponse")
+    LessonResponse toLessonResponse (Lesson lesson);
 }

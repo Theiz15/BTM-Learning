@@ -15,6 +15,7 @@ public interface LessonService {
     // Lesson tracking
     LessonProgressResponse getOrCreate(Long lessonId);
     LessonProgressResponse updateProgress(UpdateProgressRequest request);
+    LessonResponse get(Long lessonId);
 
     // Tracking course
     CourseProgressResponse getCourseProgress(Long courseId);

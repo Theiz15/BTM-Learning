@@ -176,6 +176,15 @@ public class LessonServiceImpl implements LessonService {
         return toResponse(saved);
     }
 
+    @Override
+    public LessonResponse get(Long lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(
+                () -> new AppException(ErrorCode.LESSON_NOT_FOUND)
+        );
+
+        return lessonMapper.toLessonResponse(lesson);
+    }
+
     @Transactional(readOnly = true)
     @Override
     public CourseProgressResponse getCourseProgress(Long courseId) {
@@ -325,7 +334,7 @@ public class LessonServiceImpl implements LessonService {
                 );
                 lesson.setDocumentUrl(fileUpload.getFilePath());
                 lesson.setVideoUrl(null);
-                lesson.setQuiz(null);
+                lesson.setQuizzes(null);
             }
             case VIDEO -> {
                 if (fileUploadId == null) {
@@ -337,16 +346,17 @@ public class LessonServiceImpl implements LessonService {
                 );
                 lesson.setVideoUrl(fileUpload.getFilePath());
                 lesson.setDocumentUrl(null);
-                lesson.setQuiz(null);
+                lesson.setQuizzes(null);
             }
             case QUIZ -> {
                 if (quizId == null) {
                     throw new AppException(ErrorCode.QUIZ_NOT_FOUND);
                 }
 
-                lesson.setQuiz(quizRepository.findById(quizId).orElseThrow(
-                        () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
-                ));
+                Quiz quiz = quizRepository.findById(quizId)
+                        .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
+
+                lesson.getQuizzes().add(quiz);
                 lesson.setDocumentUrl(null);
                 lesson.setVideoUrl(null);
             }

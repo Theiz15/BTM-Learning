@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Table(name = "lessons")
 @Entity
@@ -33,8 +35,8 @@ public class Lesson {
     @JoinColumn(name = "section_id")
     private Section section;
 
-    @OneToOne(mappedBy = "lesson", cascade = CascadeType.ALL)
-    private Quiz quiz;
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL)
+    private List<Quiz> quizzes = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id")

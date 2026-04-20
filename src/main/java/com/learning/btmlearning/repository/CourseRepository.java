@@ -57,4 +57,11 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
         @EntityGraph(attributePaths = {"instructor", "category"})
         List<Course> findByStatusOrderByCreateAtDesc(CourseStatus status);
+
+//    @Query("SELECT c FROM Course c " +
+//            "LEFT JOIN FETCH c.sections s " +
+//            "LEFT JOIN FETCH s.lessons l " +
+//            "LEFT JOIN FETCH l.quiz " +
+//            "WHERE c.id = :courseId")
+//    Optional<Course> findCourseWithAllDetails(@Param("courseId") Long courseId);
 }

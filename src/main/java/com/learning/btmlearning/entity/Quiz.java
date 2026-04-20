@@ -29,7 +29,7 @@ public class Quiz {
     private Boolean shuffleQuestions = false;
     private Boolean shuffleAnswers = false;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "lesson_id")
     private Lesson lesson;
 

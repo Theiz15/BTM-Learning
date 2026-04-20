@@ -4,6 +4,7 @@ import com.learning.btmlearning.constant.LessonType;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class LessonResponse {
@@ -19,5 +20,5 @@ public class LessonResponse {
     private boolean isPreview;
     private LocalDateTime createdAt;
 
-    private QuizResponse quizResponse;
+    private List<QuizResponse> quizzes;
 }

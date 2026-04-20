@@ -16,12 +16,12 @@ import org.mapstruct.*;
 )
 public interface LessonMapper {
         @Mapping(target = "section", ignore = true)
-        @Mapping(target = "quiz", ignore = true)
+        @Mapping(target = "quizzes", ignore = true)
         Lesson toLesson (LessonRequest request);
 
         @Mapping(target = "sectionId", source = "section.id")
         @Mapping(target = "courseId", source = "course.id")
-        @Mapping(target = "quizResponse", source = "quiz", qualifiedByName = "toQuizResponse")
+        @Mapping(target = "quizzes", source = "quizzes", qualifiedByName = "toQuizResponse")
         LessonResponse toLessonResponse (Lesson lesson);
 
         @Named("toQuizResponse")

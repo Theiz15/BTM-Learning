@@ -33,6 +33,18 @@ public class LessonController {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @GetMapping("/lesson/{lessonId}")
+    public ResponseEntity<ApiResponse<LessonResponse>> getLesson(@PathVariable Long lessonId) {
+        LessonResponse result = lessonService.get(lessonId);
+
+        ApiResponse<LessonResponse> apiResponse = ApiResponse.<LessonResponse>builder()
+                .message("Lesson is retrieved successfully")
+                .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
     @PutMapping("/lessons/{lessonId}")
     @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<LessonResponse>> updateLesson(
