@@ -29,8 +29,8 @@ public class QuizController {
     }
 
     @PostMapping("/quiz/submit")
-    public ResponseEntity<ApiResponse<QuizAttemptResponse>> submitQuiz(Long userId, QuizAttemptRequest request){
-        QuizAttemptResponse result = quizService.submitQuiz(userId, request);
+    public ResponseEntity<ApiResponse<QuizAttemptResponse>> submitQuiz(QuizAttemptRequest request){
+        QuizAttemptResponse result = quizService.submitQuiz(request);
 
         ApiResponse<QuizAttemptResponse> apiResponse = ApiResponse.<QuizAttemptResponse>builder()
                 .message("Attempt submitted")

@@ -9,5 +9,5 @@ public interface QuizService {
     QuizResponse createQuiz (QuizRequest request);
     QuizResponse getQuiz (Long quizId);
     void deleteQuiz (Long quizId);
-    QuizAttemptResponse submitQuiz(Long userId, QuizAttemptRequest request);
+    QuizAttemptResponse submitQuiz(QuizAttemptRequest request);
 }

@@ -11,6 +11,7 @@ import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.QuizMapper;
 import com.learning.btmlearning.repository.*;
 import com.learning.btmlearning.service.QuizService;
+import com.learning.btmlearning.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ public class QuizServiceImpl implements QuizService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final QuizQuestionRepository quizQuestionRepository;
     private final AnswerRepository answerRepository;
+    private final SecurityUtil securityUtil;
 
     @Override
     public QuizResponse createQuiz (QuizRequest request) {
@@ -108,13 +110,14 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Transactional
-    public QuizAttemptResponse submitQuiz(Long userId, QuizAttemptRequest request) {
+    public QuizAttemptResponse submitQuiz(QuizAttemptRequest request) {
+        User user = securityUtil.getCurrentUser();
 
         Quiz quiz = quizRepository.findById(request.getQuizId())
                 .orElseThrow(() -> new RuntimeException("Quiz not found"));
 
         QuizAttempt attempt = QuizAttempt.builder()
-                .user((User) userRepository.findById(userId).orElse(null))
+                .user((User) userRepository.findById(user.getId()).orElse(null))
                 .quiz(quiz)
                 .startedAt(LocalDateTime.now())
                 .build();
