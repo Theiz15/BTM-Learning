@@ -13,6 +13,11 @@ public interface CourseReviewRepository extends JpaRepository<CourseReview, Long
     boolean existsByCourseIdAndUserId(Long courseId, Long userId);
     List<CourseReview> findByCourseIdOrderByCreatedAtDesc(Long courseId);
 
-    @Query("select coalesce(avg(cr.rating), 0), count(cr) from CourseReview cr where cr.course.id = :courseId")
-    Object[] calculateCourseRatingSummary(@Param("courseId") Long courseId);
+    @Query("select coalesce(avg(cr.rating), 0) as avgRating, count(cr) as ratingCount from CourseReview cr where cr.course.id = :courseId")
+    RatingSummary calculateCourseRatingSummary(Long courseId);
+
+    interface RatingSummary {
+        Double getAvgRating();
+        Long getRatingCount();
+    }
 }

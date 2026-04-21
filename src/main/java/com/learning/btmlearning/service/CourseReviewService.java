@@ -79,10 +79,18 @@ public class CourseReviewService {
     }
 
     private void updateCourseRatingSummary(Long courseId) {
-        Object[] summary = courseReviewRepository.calculateCourseRatingSummary(courseId);
-        double averageRating = ((Number) summary[0]).doubleValue();
-        long ratingCount = ((Number) summary[1]).longValue();
-        courseService.updateCourseRating(courseId, averageRating, ratingCount);
+//        Object[] summary = courseReviewRepository.calculateCourseRatingSummary(courseId);
+//        double averageRating = ((Number) summary[0]).doubleValue();
+//        long ratingCount = ((Number) summary[1]).longValue();
+//        courseService.updateCourseRating(courseId, averageRating, ratingCount);
+        CourseReviewRepository.RatingSummary summary = courseReviewRepository.calculateCourseRatingSummary(courseId);
+
+        if (summary != null) {
+            double avg = (summary.getAvgRating() != null) ? summary.getAvgRating() : 0.0;
+            long count = (summary.getRatingCount() != null) ? summary.getRatingCount() : 0L;
+
+            courseService.updateCourseRating(courseId, avg, count);
+        }
     }
 
     private CourseReviewResponse mapToResponse(CourseReview review) {

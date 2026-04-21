@@ -106,7 +106,7 @@ public class QuizServiceImpl implements QuizService {
                 () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
         );
 
-        List<QuizQuestion> quizQuestions = quizQuestionRepository.findAllByQuizIdWithDetails(quizId);
+            List<QuizQuestion> quizQuestions = quizQuestionRepository.findAllByQuizIdWithDetails(quizId);
 
         QuizResponse quizResponse = quizMapper.toQuizResponse(quiz);
         quizResponse.setQuestions(quizQuestions.stream()
