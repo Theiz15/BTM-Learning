@@ -20,6 +20,7 @@ public interface QuizMapper {
 
     @Mapping(target = "timeLimit", source = "timeLimitMin")
     @Mapping(target = "questions", source = "questions", qualifiedByName = "toQuizQuestionResponse")
+    @Mapping(target = "lessonId", source = "lesson.id")
     QuizResponse toQuizResponse (Quiz quiz);
 
     @Named("toQuizQuestionResponse")
