@@ -9,7 +9,9 @@ import java.util.List;
 public class QuizResponse {
     private Integer id;
     private String title;
+    private String description;
     private Integer timeLimit;
+    private Integer passScore;
     private boolean shuffleQuestions;
     private boolean shuffleAnswers;
     private Integer totalQuestions;

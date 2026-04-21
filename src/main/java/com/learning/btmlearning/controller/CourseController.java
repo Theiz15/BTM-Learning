@@ -62,7 +62,7 @@ public class CourseController {
     }
 
     @PutMapping("/course/{courseId}")
-        @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> updateCourse(@PathVariable Long courseId, @RequestBody CourseRequest request) {
         CourseResponse result = courseService.updateCourse(request, courseId);
 
@@ -99,7 +99,7 @@ public class CourseController {
     }
 
     @GetMapping("/pending")
-        @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<CourseResponse>>> getPendingCourses(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size

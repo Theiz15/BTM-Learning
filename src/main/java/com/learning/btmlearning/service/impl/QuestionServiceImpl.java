@@ -73,7 +73,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     private void syncAnswer (Question question, List<AnswerRequest> requests) {
-        if (requests.isEmpty()) return;
+        if (requests == null || requests.isEmpty()) return;
 
         validateAnswers(question.getQuestionType(), requests);
 

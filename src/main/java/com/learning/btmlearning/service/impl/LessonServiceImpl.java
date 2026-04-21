@@ -64,7 +64,15 @@ public class LessonServiceImpl implements LessonService {
             throw new AppException(ErrorCode.SECTION_NOT_FOUND);
         }
 
-        bindLessonResources(lesson, request.getLessonType(), request.getFileUploadId(), request.getQuizId());
+        // Collect quiz IDs (support both single quizId and list quizIds)
+        List<Long> quizIdList = new java.util.ArrayList<>();
+        if (request.getQuizIds() != null && !request.getQuizIds().isEmpty()) {
+            quizIdList.addAll(request.getQuizIds());
+        } else if (request.getQuizId() != null) {
+            quizIdList.add(request.getQuizId());
+        }
+
+        bindLessonResources(lesson, request.getLessonType(), request.getFileUploadId(), quizIdList);
 
         lesson.setCreatedAt(LocalDateTime.now());
         lesson.setSection(section);
@@ -94,7 +102,19 @@ public class LessonServiceImpl implements LessonService {
             lesson.setCourse(section.getCourse());
         }
 
-        bindLessonResources(lesson, lesson.getLessonType(), request.getFileUploadId(), request.getQuizId());
+        // Only rebind resources when explicitly provided (avoid clearing quizzes when just updating title)
+        boolean hasFileUpdate = request.getFileUploadId() != null;
+        boolean hasQuizUpdate = request.getQuizIds() != null || request.getQuizId() != null;
+
+        if (hasFileUpdate || hasQuizUpdate) {
+            List<Long> quizIdList = new java.util.ArrayList<>();
+            if (request.getQuizIds() != null && !request.getQuizIds().isEmpty()) {
+                quizIdList.addAll(request.getQuizIds());
+            } else if (request.getQuizId() != null) {
+                quizIdList.add(request.getQuizId());
+            }
+            bindLessonResources(lesson, lesson.getLessonType(), request.getFileUploadId(), quizIdList);
+        }
 
         return lessonMapper.toLessonResponse(lessonRepository.save(lesson));
     }
@@ -319,55 +339,60 @@ public class LessonServiceImpl implements LessonService {
         );
     }
 
-    private void bindLessonResources(Lesson lesson, LessonType lessonType, Long fileUploadId, Long quizId) {
+    private void bindLessonResources(Lesson lesson, LessonType lessonType, Long fileUploadId, List<Long> quizIds) {
         switch (lessonType) {
             case DOCUMENT -> {
-                if (fileUploadId == null) {
-                    throw new AppException(ErrorCode.FILE_NOT_FOUND);
+                // Document: require file, optionally bind quizzes too
+                if (fileUploadId != null) {
+                    FileUpload fileUpload = fileUploadRepository.findById(fileUploadId).orElseThrow(
+                            () -> new AppException(ErrorCode.FILE_NOT_FOUND)
+                    );
+                    lesson.setDocumentUrl(fileUpload.getFilePath());
                 }
-
-                FileUpload fileUpload = fileUploadRepository.findById(fileUploadId).orElseThrow(
-                        () -> new AppException(ErrorCode.FILE_NOT_FOUND)
-                );
-                lesson.setDocumentUrl(fileUpload.getFilePath());
                 lesson.setVideoUrl(null);
-                clearLessonQuizLinks(lesson);
+                // Bind quizzes if provided
+                bindQuizzes(lesson, quizIds);
             }
             case VIDEO -> {
-                if (fileUploadId == null) {
-                    throw new AppException(ErrorCode.FILE_NOT_FOUND);
+                if (fileUploadId != null) {
+                    FileUpload fileUpload = fileUploadRepository.findById(fileUploadId).orElseThrow(
+                            () -> new AppException(ErrorCode.FILE_NOT_FOUND)
+                    );
+                    lesson.setVideoUrl(fileUpload.getFilePath());
                 }
-
-                FileUpload fileUpload = fileUploadRepository.findById(fileUploadId).orElseThrow(
-                        () -> new AppException(ErrorCode.FILE_NOT_FOUND)
-                );
-                lesson.setVideoUrl(fileUpload.getFilePath());
                 lesson.setDocumentUrl(null);
-                clearLessonQuizLinks(lesson);
+                // Bind quizzes if provided
+                bindQuizzes(lesson, quizIds);
             }
             case QUIZ -> {
-                if (quizId == null) {
-                    throw new AppException(ErrorCode.QUIZ_NOT_FOUND);
-                }
-
-                Quiz quiz = quizRepository.findById(quizId)
-                        .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
-
-                clearLessonQuizLinks(lesson);
-
-                Lesson previousLesson = quiz.getLesson();
-                if (previousLesson != null
-                        && !Objects.equals(previousLesson.getId(), lesson.getId())
-                        && previousLesson.getQuizzes() != null) {
-                    previousLesson.getQuizzes().removeIf(existingQuiz -> Objects.equals(existingQuiz.getId(), quiz.getId()));
-                }
-
-                quiz.setLesson(lesson);
-                ensureLessonQuizList(lesson).add(quiz);
+                // Quiz-only lesson
                 lesson.setDocumentUrl(null);
                 lesson.setVideoUrl(null);
+                bindQuizzes(lesson, quizIds);
             }
             default -> throw new IllegalStateException("Unexpected value: " + lessonType);
+        }
+    }
+
+    private void bindQuizzes(Lesson lesson, List<Long> quizIds) {
+        clearLessonQuizLinks(lesson);
+
+        if (quizIds == null || quizIds.isEmpty()) return;
+
+        for (Long quizId : quizIds) {
+            Quiz quiz = quizRepository.findById(quizId)
+                    .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
+
+            // Detach from previous lesson if needed
+            Lesson previousLesson = quiz.getLesson();
+            if (previousLesson != null
+                    && !Objects.equals(previousLesson.getId(), lesson.getId())
+                    && previousLesson.getQuizzes() != null) {
+                previousLesson.getQuizzes().removeIf(q -> Objects.equals(q.getId(), quiz.getId()));
+            }
+
+            quiz.setLesson(lesson);
+            ensureLessonQuizList(lesson).add(quiz);
         }
     }
 

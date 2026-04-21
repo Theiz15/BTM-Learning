@@ -44,6 +44,22 @@ public class QuestionController {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @PutMapping("/questions/{questionId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    public ResponseEntity<ApiResponse<QuestionResponse>> updateQuestion(
+            @PathVariable Long questionId,
+            @RequestBody @Valid QuestionRequest questionRequest
+    ) {
+        QuestionResponse result = questionService.updateQuestion(questionRequest, questionId);
+
+        ApiResponse<QuestionResponse> apiResponse = ApiResponse.<QuestionResponse>builder()
+                .message("Question updated successfully")
+                .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
     @PostMapping("/questions/search")
     @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<Page<QuestionResponse>>> searchQuestion(@RequestBody @Valid SearchQuestionRequest request) {
