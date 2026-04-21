@@ -24,4 +24,6 @@ public interface CourseService {
     CourseSummaryResponse updateCourseDiscount(Long courseId, CourseDiscountRequest request);
     Course findCourse(Long courseId);
     void updateCourseRating(Long courseId, double rating, long count);
+
+    List<CourseResponse> getAllCoursesWithInstructor();
 }

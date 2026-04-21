@@ -48,6 +48,19 @@ public class CourseController {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @GetMapping("/instructor/courses")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<ApiResponse<List<CourseResponse>>> getAllCourseWithInstructor() {
+        List<CourseResponse> result = courseService.getAllCoursesWithInstructor();
+
+        ApiResponse<List<CourseResponse>> apiResponse = ApiResponse.<List<CourseResponse>>builder()
+                .message("Get list of courses of instructor successfully")
+                .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
     @PutMapping("/course/{courseId}")
         @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> updateCourse(@PathVariable Long courseId, @RequestBody CourseRequest request) {

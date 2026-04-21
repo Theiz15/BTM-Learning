@@ -94,14 +94,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public List<CourseResponse> getAllCourses() {
-        User user = securityUtil.getCurrentUser();
-
-        List<Course> courses;
-        if (user.getRole() == UserRole.INSTRUCTOR) {
-            courses = courseRepository.findAllByInstructorId(user.getId());
-            return courses.stream().map(courseMapper::toCourseResponse).collect(Collectors.toList());
-        }
-        courses = courseRepository.findAll();
+        List<Course> courses = courseRepository.findAll();
         return courses.stream().map(courseMapper::toCourseResponse).collect(Collectors.toList());
     }
 
@@ -143,6 +136,14 @@ public class CourseServiceImpl implements CourseService {
         Course course = findCourse(courseId);
         course.setAvgRating((float) rating);
         courseRepository.save(course);
+    }
+
+    @Override
+    public List<CourseResponse> getAllCoursesWithInstructor() {
+        User user = securityUtil.getCurrentUser();
+
+        List<Course> courses = courseRepository.findAllByInstructorId(user.getId());
+        return courses.stream().map(courseMapper::toCourseResponse).collect(Collectors.toList());
     }
 
     @Override
