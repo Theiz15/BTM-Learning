@@ -13,6 +13,8 @@ import com.learning.btmlearning.mapper.CourseMapper;
 import com.learning.btmlearning.repository.CoursePromotionRepository;
 import com.learning.btmlearning.repository.CategoryRepository;
 import com.learning.btmlearning.repository.CourseRepository;
+import com.learning.btmlearning.repository.CourseReviewRepository;
+import com.learning.btmlearning.repository.EnrollmentRepository;
 import com.learning.btmlearning.repository.FileUploadRepository;
 import com.learning.btmlearning.service.CourseService;
 import com.learning.btmlearning.utils.SecurityUtil;
@@ -35,6 +37,8 @@ public class CourseServiceImpl implements CourseService {
     private final SecurityUtil securityUtil;
     private final CoursePromotionRepository coursePromotionRepository;
     private final CategoryRepository categoryRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final CourseReviewRepository courseReviewRepository;
 
     @Override
     public CourseResponse createCourse(CourseRequest request) {
@@ -151,6 +155,7 @@ public class CourseServiceImpl implements CourseService {
     public void updateCourseRating(Long courseId, double rating, long count) {
         Course course = findCourse(courseId);
         course.setAvgRating((float) rating);
+        course.setReviewCount((int) count);
         courseRepository.save(course);
     }
 
@@ -242,6 +247,20 @@ public class CourseServiceImpl implements CourseService {
     private CourseResponse toCourseResponseWithPromotion(Course course) {
         CourseResponse response = courseMapper.toCourseResponse(course);
         response.setCampaignName(resolveLatestCampaignName(course.getId()));
+
+        // Dynamically compute real statistics from DB to handle historical data
+        long enrollmentCount = enrollmentRepository.countByCourseId(course.getId());
+        response.setTotalStudents((int) enrollmentCount);
+
+        CourseReviewRepository.RatingSummary ratingSummary =
+                courseReviewRepository.calculateCourseRatingSummary(course.getId());
+        if (ratingSummary != null) {
+            double avg = ratingSummary.getAvgRating() != null ? ratingSummary.getAvgRating() : 0.0;
+            long reviewCount = ratingSummary.getRatingCount() != null ? ratingSummary.getRatingCount() : 0L;
+            response.setAvgRating((float) avg);
+            response.setReviewCount((int) reviewCount);
+        }
+
         return response;
     }
 

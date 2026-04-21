@@ -53,10 +53,6 @@ public class PaymentService {
     @Value("${vnpay.return-url}") @NonFinal String vnpReturnUrl;
     @Value("${vnpay.frontend-return-url}") @NonFinal String frontendReturnUrl;
 
-    public String getSecretKey() {
-        return secretKey;
-    }
-
 
     @Transactional
     public String createPaymentUrl(Long courseId, String voucherCode, HttpServletRequest request) {
@@ -212,6 +208,9 @@ public class PaymentService {
             if (voucher != null) {
                 voucher.setUsedCount(voucher.getUsedCount() + 1);
             }
+
+            payment.getCourse().setTotalStudents(payment.getCourse().getTotalStudents() + 1);
+            courseRepository.save(payment.getCourse());
 
             Enrollment enrollment = Enrollment.builder()
                     .user(payment.getUser())

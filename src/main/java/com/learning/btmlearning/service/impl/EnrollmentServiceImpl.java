@@ -71,6 +71,9 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         enrollment.setStatus(EnrollmentStatus.ACTIVE);
         enrollment.setPaymentStatus(PaymentStatus.FREE);
 
+        course.setTotalStudents(course.getTotalStudents() + 1);
+        courseRepository.save(course);
+
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
 
         try {

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -36,7 +37,10 @@ public class Course {
     private float avgRating;
     private int totalStudents;
     private int totalLessons;
+    private int reviewCount = 0;
     private LocalDateTime publishDate;
+
+    @CreationTimestamp
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
 

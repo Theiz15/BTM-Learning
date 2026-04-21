@@ -79,10 +79,6 @@ public class CourseReviewService {
     }
 
     private void updateCourseRatingSummary(Long courseId) {
-//        Object[] summary = courseReviewRepository.calculateCourseRatingSummary(courseId);
-//        double averageRating = ((Number) summary[0]).doubleValue();
-//        long ratingCount = ((Number) summary[1]).longValue();
-//        courseService.updateCourseRating(courseId, averageRating, ratingCount);
         CourseReviewRepository.RatingSummary summary = courseReviewRepository.calculateCourseRatingSummary(courseId);
 
         if (summary != null) {

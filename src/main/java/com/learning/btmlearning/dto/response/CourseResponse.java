@@ -23,6 +23,7 @@ public class CourseResponse {
     private float avgRating;
     private int totalStudents;
     private int totalLessons;
+    private int reviewCount;
     private LocalDateTime publishDate;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
