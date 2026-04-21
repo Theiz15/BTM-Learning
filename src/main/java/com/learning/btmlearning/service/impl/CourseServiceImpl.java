@@ -73,6 +73,10 @@ public class CourseServiceImpl implements CourseService {
         courseMapper.updateCourse(course, request);
         course.setUpdateAt(LocalDateTime.now());
 
+        if (request.getPrice() != null) {
+            course.setOriginalPrice(request.getPrice());
+        }
+
         if (request.getStatus() == CourseStatus.PUBLISHED) {
             course.setPublishDate(LocalDateTime.now());
         }
@@ -90,8 +94,14 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public List<CourseResponse> getAllCourses() {
-        List<Course> courses = courseRepository.findAll();
+        User user = securityUtil.getCurrentUser();
 
+        List<Course> courses;
+        if (user.getRole() == UserRole.INSTRUCTOR) {
+            courses = courseRepository.findAllByInstructorId(user.getId());
+            return courses.stream().map(courseMapper::toCourseResponse).collect(Collectors.toList());
+        }
+        courses = courseRepository.findAll();
         return courses.stream().map(courseMapper::toCourseResponse).collect(Collectors.toList());
     }
 

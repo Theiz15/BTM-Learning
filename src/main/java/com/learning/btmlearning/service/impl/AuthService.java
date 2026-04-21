@@ -164,7 +164,7 @@ public class AuthService{
         redisTemplate.opsForValue().set(
                 "refresh:" + userId,
                 refreshToken,
-                Duration.ofSeconds(refreshExpiration)
+                Duration.ofMillis(refreshExpiration)
         );
     }
 }

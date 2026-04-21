@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
@@ -28,6 +30,18 @@ public class QuizController {
         ApiResponse<QuizResponse> apiResponse = ApiResponse.<QuizResponse>builder()
                 .message("Create quiz successful")
                 .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/quizzes")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<List<QuizResponse>>> getAllQuizzes(){
+
+        ApiResponse<List<QuizResponse>> apiResponse = ApiResponse.<List<QuizResponse>>builder()
+                .message("getAllQuizzes successful")
+                .result(quizService.getAllQuizzes())
                 .build();
 
         return ResponseEntity.ok(apiResponse);

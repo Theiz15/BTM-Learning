@@ -136,4 +136,6 @@ public class CourseController {
                 .result(courseService.updateCourseDiscount(courseId, request))
                 .build();
     }
+
+
 }

@@ -35,6 +35,7 @@ public class QuizServiceImpl implements QuizService {
     private final SecurityUtil securityUtil;
 
     @Override
+    @Transactional
     public QuizResponse createQuiz (QuizRequest request) {
         Quiz quiz = quizMapper.toQuiz(request);
         List<QuizRequest.ManualQuestionItem> manualQuestions =
@@ -227,6 +228,12 @@ public class QuizServiceImpl implements QuizService {
                 .build();
     }
 
+    @Override
+    public List<QuizResponse> getAllQuizzes() {
+        List<Quiz> quizzes = quizRepository.findAll();
+        return quizzes.stream().map(quizMapper::toQuizResponse).toList();
+    }
+
     private List<AttemptAnswer> mapToAttemptAnswers(
             List<AnswerAttemptRequest> requests,
             QuizAttempt attempt,
@@ -275,7 +282,15 @@ public class QuizServiceImpl implements QuizService {
             return;
         }
 
-        if (course == null || course.getInstructor() == null || !Objects.equals(course.getInstructor().getId(), currentUser.getId())) {
+        // Standalone quiz (not linked to any course) — allow any instructor
+        if (course == null) {
+            return;
+        }
+
+        // Force-initialize lazy proxy to avoid null on lazy-loaded instructor
+        User instructor = course.getInstructor();
+        Long instructorId = instructor != null ? instructor.getId() : null;
+        if (instructorId == null || !Objects.equals(instructorId, currentUser.getId())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
     }
