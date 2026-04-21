@@ -35,6 +35,22 @@ public class QuizController {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @PutMapping("/quizzes/{quizId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    public ResponseEntity<ApiResponse<QuizResponse>> updateQuiz(
+            @PathVariable Long quizId,
+            @RequestBody QuizRequest quizRequest
+    ) {
+        QuizResponse result = quizService.updateQuiz(quizRequest, quizId);
+
+        ApiResponse<QuizResponse> apiResponse = ApiResponse.<QuizResponse>builder()
+                .message("Update quiz successful")
+                .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
     @GetMapping("/quizzes")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<QuizResponse>>> getAllQuizzes(){
