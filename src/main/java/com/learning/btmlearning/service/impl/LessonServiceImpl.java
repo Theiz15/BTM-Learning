@@ -283,6 +283,8 @@ public class LessonServiceImpl implements LessonService {
 
         if (totalLessons > 0 && completedLessons >= totalLessons) {
             enrollment.setStatus(EnrollmentStatus.COMPLETED);
+            enrollment.setCompletedAt(LocalDateTime.now());
+            enrollment.setProgressPercent(100f);
             enrollmentRepository.save(enrollment);
         }
     }

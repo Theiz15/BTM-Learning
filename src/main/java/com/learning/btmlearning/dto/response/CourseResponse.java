@@ -17,6 +17,7 @@ public class CourseResponse {
     private BigDecimal originalPrice;
     private BigDecimal price;
     private LocalDateTime discountEndDate;
+    private String campaignName;
     private String level;
     private CourseStatus status;
     private float avgRating;

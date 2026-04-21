@@ -17,6 +17,7 @@ public class CourseSummaryResponse {
     private String description;
     private String thumbnailUrl;
     private LocalDateTime discountEndDate;
+    private String campaignName;
     private BigDecimal originalPrice;
     private BigDecimal price;
     private String level;

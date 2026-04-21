@@ -59,6 +59,14 @@ public class UserController {
                 .build();
     }
 
+    @PostMapping("/register-instructor")
+    public ApiResponse<UserProfile> registerAsInstructor() {
+        return ApiResponse.<UserProfile>builder()
+                .message("Registered as instructor successfully")
+                .result(userService.registerAsInstructor())
+                .build();
+    }
+
     @GetMapping
         @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Page<UserAdminResponse>> getUsers(

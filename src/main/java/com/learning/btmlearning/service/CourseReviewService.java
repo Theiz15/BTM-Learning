@@ -1,15 +1,18 @@
 package com.learning.btmlearning.service;
 
+import com.learning.btmlearning.constant.EnrollmentStatus;
 import com.learning.btmlearning.constant.NotificationType;
 import com.learning.btmlearning.dto.request.CourseReviewCreationRequest;
 import com.learning.btmlearning.dto.response.CourseReviewResponse;
 import com.learning.btmlearning.entity.Course;
 import com.learning.btmlearning.entity.CourseReview;
+import com.learning.btmlearning.entity.Enrollment;
 import com.learning.btmlearning.entity.User;
 import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.repository.CourseReviewRepository;
-import com.learning.btmlearning.repository.UserRepository;
+import com.learning.btmlearning.repository.EnrollmentRepository;
+import com.learning.btmlearning.utils.SecurityUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,13 +27,25 @@ import java.util.stream.Collectors;
 public class CourseReviewService {
     CourseReviewRepository courseReviewRepository;
     CourseService courseService;
-    UserRepository userRepository;
+    EnrollmentRepository enrollmentRepository;
     NotificationService notificationService;
+    SecurityUtil securityUtil;
 
     public CourseReviewResponse createReview(CourseReviewCreationRequest request) {
         Course course = courseService.findCourse(request.getCourseId());
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User user = securityUtil.getCurrentUser();
+
+        Enrollment enrollment = enrollmentRepository
+                .findByUserIdAndCourseId(user.getId(), course.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_REVIEW_REQUIRES_COMPLETION));
+
+        boolean hasCompletedCourse = enrollment.getStatus() == EnrollmentStatus.COMPLETED
+                || enrollment.getCompletedAt() != null
+                || (enrollment.getProgressPercent() != null && enrollment.getProgressPercent() >= 100f);
+
+        if (!hasCompletedCourse) {
+            throw new AppException(ErrorCode.COURSE_REVIEW_REQUIRES_COMPLETION);
+        }
 
         if (courseReviewRepository.existsByCourseIdAndUserId(course.getId(), user.getId())) {
             throw new AppException(ErrorCode.COURSE_REVIEW_ALREADY_EXISTS);
@@ -75,6 +90,8 @@ public class CourseReviewService {
                 .id(review.getId())
                 .courseId(review.getCourse().getId())
                 .userId(review.getUser().getId())
+            .userFullName(review.getUser().getFullName())
+            .userAvatarUrl(review.getUser().getAvatarUrl())
                 .rating(review.getRating())
                 .comment(review.getComment())
                 .createdAt(review.getCreatedAt())

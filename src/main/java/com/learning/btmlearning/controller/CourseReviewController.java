@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class CourseReviewController {
     CourseReviewService courseReviewService;
 
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<CourseReviewResponse> createReview(@Valid @RequestBody CourseReviewCreationRequest request) {
         return ApiResponse.<CourseReviewResponse>builder()
                 .result(courseReviewService.createReview(request))

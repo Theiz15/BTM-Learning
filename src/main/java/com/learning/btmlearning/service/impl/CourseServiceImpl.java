@@ -63,7 +63,7 @@ public class CourseServiceImpl implements CourseService {
         course.setOriginalPrice(request.getPrice());
         course.setInstructor(user);
 
-        return courseMapper.toCourseResponse(courseRepository.save(course));
+        return toCourseResponseWithPromotion(courseRepository.save(course));
     }
 
     @Override
@@ -77,11 +77,27 @@ public class CourseServiceImpl implements CourseService {
             course.setOriginalPrice(request.getPrice());
         }
 
+        if (Objects.nonNull(request.getFileUploadId())) {
+            FileUpload fileUpload = fileUploadRepository.findById(request.getFileUploadId()).orElseThrow(
+                    () -> new AppException(ErrorCode.FILE_NOT_FOUND)
+            );
+
+            course.setThumbnailUrl(fileUpload.getFilePath());
+        }
+
+        if (Objects.nonNull(request.getCategoryId())) {
+            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(
+                    () -> new AppException(ErrorCode.CATEGORY_NOT_FOUND)
+            );
+
+            course.setCategory(category);
+        }
+
         if (request.getStatus() == CourseStatus.PUBLISHED) {
             course.setPublishDate(LocalDateTime.now());
         }
 
-        return courseMapper.toCourseResponse(courseRepository.save(course));
+        return toCourseResponseWithPromotion(courseRepository.save(course));
     }
 
     @Override
@@ -95,7 +111,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public List<CourseResponse> getAllCourses() {
         List<Course> courses = courseRepository.findAll();
-        return courses.stream().map(courseMapper::toCourseResponse).collect(Collectors.toList());
+        return courses.stream().map(this::toCourseResponseWithPromotion).collect(Collectors.toList());
     }
 
     @Override
@@ -107,7 +123,7 @@ public class CourseServiceImpl implements CourseService {
             throw new AppException(ErrorCode.COURSE_NOT_FOUND);
         }
 
-        return courseMapper.toCourseResponse(course);
+        return toCourseResponseWithPromotion(course);
     }
 
     @Override
@@ -143,14 +159,14 @@ public class CourseServiceImpl implements CourseService {
         User user = securityUtil.getCurrentUser();
 
         List<Course> courses = courseRepository.findAllByInstructorId(user.getId());
-        return courses.stream().map(courseMapper::toCourseResponse).collect(Collectors.toList());
+        return courses.stream().map(this::toCourseResponseWithPromotion).collect(Collectors.toList());
     }
 
     @Override
     public Page<CourseResponse> getPendingCourses(Pageable pageable) {
         Page<Course> pendingCourses = courseRepository.findByStatus(CourseStatus.PENDING ,pageable) ;
 
-        return pendingCourses.map(courseMapper::toCourseResponse);
+        return pendingCourses.map(this::toCourseResponseWithPromotion);
     }
 
     @Override
@@ -172,8 +188,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseSummaryResponse updateCourseDiscount(Long courseId, CourseDiscountRequest request) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+        Course course = getManageableCourse(courseId);
 
         CoursePromotion promotion = CoursePromotion.builder()
                 .course(course)
@@ -193,7 +208,7 @@ public class CourseServiceImpl implements CourseService {
             course.setDiscountEndDate(request.getDiscountEndDate());
         }
 
-        return courseMapper.toCourseSummaryResponse(courseRepository.save(course));
+        return toCourseSummaryResponseWithPromotion(courseRepository.save(course));
     }
 
     private Course getCourseAndValidateStatus(Long courseId) {
@@ -222,5 +237,24 @@ public class CourseServiceImpl implements CourseService {
         } catch (Exception ignored) {
             return false;
         }
+    }
+
+    private CourseResponse toCourseResponseWithPromotion(Course course) {
+        CourseResponse response = courseMapper.toCourseResponse(course);
+        response.setCampaignName(resolveLatestCampaignName(course.getId()));
+        return response;
+    }
+
+    private CourseSummaryResponse toCourseSummaryResponseWithPromotion(Course course) {
+        CourseSummaryResponse response = courseMapper.toCourseSummaryResponse(course);
+        response.setCampaignName(resolveLatestCampaignName(course.getId()));
+        return response;
+    }
+
+    private String resolveLatestCampaignName(Long courseId) {
+        return coursePromotionRepository
+                .findFirstByCourseIdOrderByStartDateDescIdDesc(courseId)
+                .map(CoursePromotion::getCampaignName)
+                .orElse(null);
     }
 }
