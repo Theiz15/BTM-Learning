@@ -19,6 +19,7 @@ public interface QuizMapper {
     Quiz toQuiz (QuizRequest request);
 
     @Mapping(target = "timeLimit", source = "timeLimitMin")
+    @Mapping(target = "passScore", source = "passScore")
     @Mapping(target = "questions", source = "questions", qualifiedByName = "toQuizQuestionResponse")
     @Mapping(target = "lessonId", source = "lesson.id")
     QuizResponse toQuizResponse (Quiz quiz);

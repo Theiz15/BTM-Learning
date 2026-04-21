@@ -83,10 +83,7 @@ public class QuizServiceImpl implements QuizService {
             }
         }
 
-        if (questionMap.isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_STOCK_QUESTION);
-        }
-
+        // Allow creating quiz with no questions (can add later)
         quiz.setQuestions(new ArrayList<>(questionMap.values()));
         quiz.setCreatedAt(LocalDateTime.now());
 
@@ -94,6 +91,70 @@ public class QuizServiceImpl implements QuizService {
 
         QuizResponse quizResponse = quizMapper.toQuizResponse(quizRepository.save(quiz));
 
+        quizResponse.setTotalScore(totalScore);
+        quizResponse.setTotalQuestions(questionMap.size());
+
+        return quizResponse;
+    }
+
+    @Override
+    @Transactional
+    public QuizResponse updateQuiz(QuizRequest request, Long quizId) {
+        Quiz quiz = quizRepository.findById(quizId).orElseThrow(
+                () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
+        );
+
+        if (quiz.getLesson() != null) {
+            assertCanManageCourse(quiz.getLesson().getCourse());
+        }
+
+        quiz.setTitle(request.getTitle());
+        quiz.setDescription(request.getDescription());
+        quiz.setTimeLimitMin(request.getTimeLimitMin());
+        quiz.setPassScore(request.getPassScore());
+        quiz.setShuffleQuestions(request.isShuffleQuestions());
+        quiz.setShuffleAnswers(request.isShuffleAnswers());
+
+        if (Objects.nonNull(request.getLessonId())) {
+            Lesson lesson = lessonRepository.findById(request.getLessonId()).orElseThrow(
+                    () -> new AppException(ErrorCode.LESSON_NOT_FOUND)
+            );
+            quiz.setLesson(lesson);
+        }
+
+        List<QuizRequest.ManualQuestionItem> manualQuestions =
+            request.getManualQuestions() == null ? List.of() : request.getManualQuestions();
+
+        if (!manualQuestions.isEmpty()) {
+            // Clear existing quiz questions
+            if (quiz.getQuestions() != null) {
+                quiz.getQuestions().clear();
+                quizRepository.flush();
+            }
+
+            Map<Long, QuizQuestion> questionMap = new LinkedHashMap<>();
+            for (QuizRequest.ManualQuestionItem item : manualQuestions) {
+                Question question = questionRepository.findById(item.getQuestionId()).orElseThrow(
+                        () -> new AppException(ErrorCode.QUESTION_NOT_FOUND)
+                );
+                questionMap.put(question.getId(), buildQuizQuestion(quiz, question, item.getSortOrder(), item.getScore()));
+            }
+            quiz.setQuestions(new ArrayList<>(questionMap.values()));
+        }
+
+        Quiz saved = quizRepository.save(quiz);
+        QuizResponse quizResponse = quizMapper.toQuizResponse(saved);
+
+        List<QuizQuestion> quizQuestions = quizQuestionRepository.findAllByQuizIdWithDetails(saved.getId());
+        quizResponse.setQuestions(quizQuestions.stream()
+                .map(quizMapper::toQuizQuestionResponse)
+                .toList());
+        quizResponse.setTotalQuestions(quizQuestions.size());
+        int totalScore = quizQuestions.stream()
+            .map(QuizQuestion::getScore)
+            .filter(Objects::nonNull)
+            .mapToInt(Integer::intValue)
+            .sum();
         quizResponse.setTotalScore(totalScore);
 
         return quizResponse;

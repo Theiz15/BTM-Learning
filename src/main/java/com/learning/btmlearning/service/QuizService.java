@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface QuizService {
     QuizResponse createQuiz (QuizRequest request);
+    QuizResponse updateQuiz (QuizRequest request, Long quizId);
     QuizResponse getQuiz (Long quizId);
     QuizResponse getQuizByLessonId(Long lessonId);
     void deleteQuiz (Long quizId);
