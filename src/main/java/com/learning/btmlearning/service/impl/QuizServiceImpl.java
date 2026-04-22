@@ -83,10 +83,6 @@ public class QuizServiceImpl implements QuizService {
             }
         }
 
-        if (questionMap.isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_STOCK_QUESTION);
-        }
-
         quiz.setQuestions(new ArrayList<>(questionMap.values()));
         quiz.setCreatedAt(LocalDateTime.now());
 
