@@ -83,7 +83,6 @@ public class QuizServiceImpl implements QuizService {
             }
         }
 
-        // Allow creating quiz with no questions (can add later)
         quiz.setQuestions(new ArrayList<>(questionMap.values()));
         quiz.setCreatedAt(LocalDateTime.now());
 
