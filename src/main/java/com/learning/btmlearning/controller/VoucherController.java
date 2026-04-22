@@ -9,7 +9,10 @@ import com.learning.btmlearning.service.VoucherService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("${api.prefix}/vouchers")
@@ -17,6 +20,15 @@ import org.springframework.web.bind.annotation.*;
 @FieldDefaults(level = AccessLevel.PRIVATE , makeFinal = true)
 public class VoucherController {
     VoucherService voucherService;
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<VoucherResponse>> getAllVouchers() {
+        return ApiResponse.<List<VoucherResponse>>builder()
+                .message("Get all vouchers successfully")
+                .result(voucherService.getAllVouchers())
+                .build();
+    }
 
     @GetMapping("/apply")
     public ApiResponse<VoucherCourseResponse> applyVoucher(
