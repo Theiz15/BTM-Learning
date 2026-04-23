@@ -27,7 +27,7 @@ public class RecommendationService {
     CourseMapper courseMapper;
     SystemPromptBuilder systemPromptBuilder;
 
-    @Cacheable(value = "recommendations", key = "#userId")
+    @Cacheable(value = "course_recommendations", key = "#userId")
     public List<CourseSummaryResponse> getRecommendations(Long userId) {
         log.info("Get recommendations for user " + userId);
 
@@ -41,7 +41,7 @@ public class RecommendationService {
 
             recommendedCourses = courseRepository.findTopRatedCourses(CourseStatus.ACTIVE , PageRequest.of(0, 10));
 
-            return recommendedCourses.stream().map(courseMapper::toCourseSummaryResponse).toList();
+            return recommendedCourses.stream().map(courseMapper::toCourseSummaryResponse).collect(java.util.stream.Collectors.toList());
         }
 
         //Call AI and handle FallBack
@@ -58,6 +58,6 @@ public class RecommendationService {
                     profile.getLearnedCategoryIds(), enrolledIds, PageRequest.of(0, 10));
         }
 
-        return recommendedCourses.stream().map(courseMapper::toCourseSummaryResponse).toList();
+        return recommendedCourses.stream().map(courseMapper::toCourseSummaryResponse).collect(java.util.stream.Collectors.toList());
     }
 }

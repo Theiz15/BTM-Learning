@@ -151,7 +151,7 @@ public class LessonServiceImpl implements LessonService {
                     Lesson lesson = lessonRepository.getReferenceById(lessonId);
 
                     LessonProgress progress = new LessonProgress();
-                    progress.setUser((com.learning.btmlearning.entity.User) userRepository.findById(user.getId()).orElse(null));
+                    progress.setUser(userRepository.findById(user.getId()).orElse(null));
                     progress.setLesson(lesson);
                     progress.setEnrollment(findEnrollment(user.getId(), lesson.getCourse().getId()));
                     progress.setWatchedSeconds(0);

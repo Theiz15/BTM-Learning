@@ -42,6 +42,7 @@ public class Course {
 
     @CreationTimestamp
     private LocalDateTime createAt;
+
     private LocalDateTime updateAt;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)

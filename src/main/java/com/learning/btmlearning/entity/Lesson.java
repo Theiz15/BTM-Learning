@@ -24,11 +24,13 @@ public class Lesson {
 
     private String title;
     private int orderIndex;
+
+    @Enumerated(EnumType.STRING)
     private LessonType lessonType;
     private String videoUrl;
     private String documentUrl;
     private int durationSeconds;
-    private boolean isPreview;
+    private boolean preview;
     private LocalDateTime createdAt;
 
     @ManyToOne

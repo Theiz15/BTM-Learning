@@ -17,7 +17,7 @@ public class LessonResponse {
     private String videoUrl;
     private String documentUrl;
     private int durationSeconds;
-    private boolean isPreview;
+    private boolean preview;
     private LocalDateTime createdAt;
 
     private List<QuizResponse> quizzes;
