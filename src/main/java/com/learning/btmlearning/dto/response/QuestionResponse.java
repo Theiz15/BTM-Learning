@@ -15,4 +15,5 @@ public class QuestionResponse {
     private String content;
     private LocalDateTime createdAt;
     private List<AnswerResponse> answers;
+    private Long quizId;
 }
