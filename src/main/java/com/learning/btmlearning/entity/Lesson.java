@@ -35,7 +35,7 @@ public class Lesson {
     @JoinColumn(name = "section_id")
     private Section section;
 
-    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "lesson", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Quiz> quizzes = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

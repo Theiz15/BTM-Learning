@@ -85,11 +85,20 @@ public class QuizServiceImpl implements QuizService {
         }
 
         // Allow creating quiz with no questions (can add later)
-        quiz.setQuestions(new ArrayList<>(questionMap.values()));
         quiz.setCreatedAt(LocalDateTime.now());
         quiz.setTotalScore(totalScore);
 
-        QuizResponse quizResponse = quizMapper.toQuizResponse(quizRepository.save(quiz));
+        // Must save quiz first to get its ID before linking questions
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        // Set quiz reference on each question (owning side of FK)
+        for (Question q : questionMap.values()) {
+            q.setQuiz(savedQuiz);
+        }
+        questionRepository.saveAll(questionMap.values());
+        savedQuiz.setQuestions(new ArrayList<>(questionMap.values()));
+
+        QuizResponse quizResponse = quizMapper.toQuizResponse(savedQuiz);
         quizResponse.setTotalQuestions(questionMap.size());
 
         return quizResponse;
@@ -126,11 +135,12 @@ public class QuizServiceImpl implements QuizService {
         int totalScore = 0;
 
         if (!manualQuestions.isEmpty()) {
-            // Clear existing quiz questions
-            if (quiz.getQuestions() != null) {
-                quiz.getQuestions().clear();
-                quizRepository.flush();
+            // Detach quiz from previously assigned questions (set their quiz_id to null)
+            List<Question> oldQuestions = questionRepository.findByQuizId(quizId);
+            for (Question q : oldQuestions) {
+                q.setQuiz(null);
             }
+            questionRepository.saveAll(oldQuestions);
 
             Map<Long, Question> questionMap = new LinkedHashMap<>();
             for (QuizRequest.ManualQuestionItem item : manualQuestions) {
@@ -138,10 +148,15 @@ public class QuizServiceImpl implements QuizService {
                         () -> new AppException(ErrorCode.QUESTION_NOT_FOUND)
                 );
                 if (questionMap.putIfAbsent(question.getId(), question) == null) {
-                    questionMap.put(question.getId(), question);
                     totalScore += item.getScore();
                 }
             }
+
+            // Set quiz reference on each question (owning side of FK)
+            for (Question q : questionMap.values()) {
+                q.setQuiz(quiz);
+            }
+            questionRepository.saveAll(questionMap.values());
             quiz.setQuestions(new ArrayList<>(questionMap.values()));
         }
 
@@ -198,6 +213,7 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    @Transactional
     public void deleteQuiz(Long quizId) {
         Quiz quiz = quizRepository.findById(quizId).orElseThrow(
                 () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
@@ -206,6 +222,13 @@ public class QuizServiceImpl implements QuizService {
         if (quiz.getLesson() != null) {
             assertCanManageCourse(quiz.getLesson().getCourse());
         }
+
+        // Detach all questions from this quiz before deleting (keep them in the bank)
+        List<Question> linkedQuestions = questionRepository.findByQuizId(quizId);
+        for (Question q : linkedQuestions) {
+            q.setQuiz(null);
+        }
+        questionRepository.saveAll(linkedQuestions);
 
         quizRepository.delete(quiz);
     }

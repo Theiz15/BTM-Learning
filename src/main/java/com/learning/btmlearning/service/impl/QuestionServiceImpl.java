@@ -12,6 +12,7 @@ import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.AnswerMapper;
 import com.learning.btmlearning.mapper.QuestionMapper;
 import com.learning.btmlearning.repository.QuestionRepository;
+import com.learning.btmlearning.repository.QuizRepository;
 import com.learning.btmlearning.service.QuestionService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final QuestionMapper questionMapper;
     private final QuestionRepository questionRepository;
     private final AnswerMapper answerMapper;
+    private final QuizRepository quizRepository;
 
     @Override
     public QuestionResponse addQuestion(QuestionRequest request) {
@@ -70,6 +72,33 @@ public class QuestionServiceImpl implements QuestionService {
         Page<Question> questions = questionRepository.findAll(spec, pageable);
 
         return questions.map(questionMapper::toQuestionResponse);
+    }
+
+    @Override
+    public List<QuestionResponse> getQuestionsByQuizId(Long quizId) {
+        return questionRepository.findByQuizId(quizId)
+                .stream()
+                .map(questionMapper::toQuestionResponse)
+                .toList();
+    }
+
+    @Override
+    public QuestionResponse assignQuestionToQuiz(Long questionId, Long quizId) {
+        Question question = questionRepository.findById(questionId).orElseThrow(
+                () -> new AppException(ErrorCode.QUESTION_NOT_FOUND)
+        );
+
+        if (quizId == null) {
+            // Unassign: detach from current quiz
+            question.setQuiz(null);
+        } else {
+            var quiz = quizRepository.findById(quizId).orElseThrow(
+                    () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
+            );
+            question.setQuiz(quiz);
+        }
+
+        return questionMapper.toQuestionResponse(questionRepository.save(question));
     }
 
     private void syncAnswer (Question question, List<AnswerRequest> requests) {
@@ -118,6 +147,10 @@ public class QuestionServiceImpl implements QuestionService {
 
             if (Objects.nonNull(request.getDifficulty())) {
                 predicates.add(cb.equal(root.get("difficulty"), request.getDifficulty()));
+            }
+
+            if (Boolean.TRUE.equals(request.getUnassigned())) {
+                predicates.add(cb.isNull(root.get("quiz")));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

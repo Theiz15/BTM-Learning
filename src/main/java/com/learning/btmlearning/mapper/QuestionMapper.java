@@ -22,5 +22,6 @@ public interface QuestionMapper {
     @Mapping(target = "answers", ignore = true)
     void updateQuestion(@MappingTarget Question question, QuestionRequest request);
 
+    @Mapping(target = "quizId", source = "quiz.id")
     QuestionResponse toQuestionResponse (Question question);
 }

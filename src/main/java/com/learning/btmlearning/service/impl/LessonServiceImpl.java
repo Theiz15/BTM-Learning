@@ -128,6 +128,15 @@ public class LessonServiceImpl implements LessonService {
 
         assertCanManageCourse(lesson.getCourse());
 
+        // Detach quizzes from this lesson before deleting (keep quizzes intact)
+        if (lesson.getQuizzes() != null) {
+            for (Quiz quiz : lesson.getQuizzes()) {
+                quiz.setLesson(null);
+            }
+            quizRepository.saveAll(lesson.getQuizzes());
+            lesson.getQuizzes().clear();
+        }
+
         lessonRepository.delete(lesson);
     }
 
