@@ -18,5 +18,5 @@ public class QuizResponse {
     private Integer totalScore;
     private LocalDateTime createdAt;
     private Long lessonId;
-    private List<QuizQuestionResponse> questions;
+    private List<QuestionResponse> questions;
 }

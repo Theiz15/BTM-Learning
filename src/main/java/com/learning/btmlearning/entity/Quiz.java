@@ -27,6 +27,7 @@ public class Quiz {
     private int passScore;
     private boolean isAiGenerated;
     private LocalDateTime createdAt;
+    private int totalScore;
 
     private Boolean shuffleQuestions = false;
     private Boolean shuffleAnswers = false;
@@ -36,5 +37,5 @@ public class Quiz {
     private Lesson lesson;
 
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<QuizQuestion> questions;
+    private List<Question> questions;
 }

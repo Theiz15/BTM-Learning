@@ -39,8 +39,8 @@ public class Question {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
-    private List<QuizQuestion> quizzes;
+    @ManyToOne(cascade = CascadeType.ALL)
+    private Quiz quiz;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")

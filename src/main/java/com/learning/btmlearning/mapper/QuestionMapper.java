@@ -14,11 +14,11 @@ import org.mapstruct.MappingTarget;
     }
 )
 public interface QuestionMapper {
-    @Mapping(target = "quizzes", ignore = true)
+    @Mapping(target = "quiz", ignore = true)
     @Mapping(target = "answers", ignore = true)
     Question toQuestion (QuestionRequest request);
 
-    @Mapping(target = "quizzes", ignore = true)
+    @Mapping(target = "quiz", ignore = true)
     @Mapping(target = "answers", ignore = true)
     void updateQuestion(@MappingTarget Question question, QuestionRequest request);
 

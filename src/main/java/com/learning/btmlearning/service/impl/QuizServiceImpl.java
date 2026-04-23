@@ -30,7 +30,6 @@ public class QuizServiceImpl implements QuizService {
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
     private final QuizAttemptRepository quizAttemptRepository;
-    private final QuizQuestionRepository quizQuestionRepository;
     private final AnswerRepository answerRepository;
     private final SecurityUtil securityUtil;
 
@@ -49,11 +48,11 @@ public class QuizServiceImpl implements QuizService {
             );
 
             assertCanManageCourse(lesson.getCourse());
-
             quiz.setLesson(lesson);
         }
 
-        Map<Long, QuizQuestion> questionMap = new LinkedHashMap<>();
+        Map<Long, Question> questionMap = new LinkedHashMap<>();
+        int totalScore = 0;
 
         // Handle select question
         if (!manualQuestions.isEmpty()) {
@@ -62,14 +61,14 @@ public class QuizServiceImpl implements QuizService {
                         () -> new AppException(ErrorCode.QUESTION_NOT_FOUND)
                 );
 
-                questionMap.put(question.getId(), buildQuizQuestion(quiz, question, item.getSortOrder(), item.getScore()));
+                if (questionMap.putIfAbsent(question.getId(), question) == null) {
+                    totalScore += item.getScore();
+                }
             }
         }
 
         // Random question
         if (!randomConfigs.isEmpty()) {
-            int autoOrderIndex = questionMap.size();
-
             for (QuizRequest.RandomQuestionConfig item : randomConfigs) {
                 List<Question> randomQuestion = fetchRandomQuestions(item);
 
@@ -78,19 +77,19 @@ public class QuizServiceImpl implements QuizService {
                 }
 
                 for (Question question : randomQuestion) {
-                    questionMap.putIfAbsent(question.getId(), buildQuizQuestion(quiz, question, autoOrderIndex++, item.getScore()));
+                    if (questionMap.putIfAbsent(question.getId(), question) == null) {
+                        totalScore += item.getScore();
+                    }
                 }
             }
         }
 
+        // Allow creating quiz with no questions (can add later)
         quiz.setQuestions(new ArrayList<>(questionMap.values()));
         quiz.setCreatedAt(LocalDateTime.now());
-
-        int totalScore = questionMap.values().stream().mapToInt(QuizQuestion::getScore).sum();
+        quiz.setTotalScore(totalScore);
 
         QuizResponse quizResponse = quizMapper.toQuizResponse(quizRepository.save(quiz));
-
-        quizResponse.setTotalScore(totalScore);
         quizResponse.setTotalQuestions(questionMap.size());
 
         return quizResponse;
@@ -124,6 +123,8 @@ public class QuizServiceImpl implements QuizService {
         List<QuizRequest.ManualQuestionItem> manualQuestions =
             request.getManualQuestions() == null ? List.of() : request.getManualQuestions();
 
+        int totalScore = 0;
+
         if (!manualQuestions.isEmpty()) {
             // Clear existing quiz questions
             if (quiz.getQuestions() != null) {
@@ -131,29 +132,21 @@ public class QuizServiceImpl implements QuizService {
                 quizRepository.flush();
             }
 
-            Map<Long, QuizQuestion> questionMap = new LinkedHashMap<>();
+            Map<Long, Question> questionMap = new LinkedHashMap<>();
             for (QuizRequest.ManualQuestionItem item : manualQuestions) {
                 Question question = questionRepository.findById(item.getQuestionId()).orElseThrow(
                         () -> new AppException(ErrorCode.QUESTION_NOT_FOUND)
                 );
-                questionMap.put(question.getId(), buildQuizQuestion(quiz, question, item.getSortOrder(), item.getScore()));
+                if (questionMap.putIfAbsent(question.getId(), question) == null) {
+                    questionMap.put(question.getId(), question);
+                    totalScore += item.getScore();
+                }
             }
             quiz.setQuestions(new ArrayList<>(questionMap.values()));
         }
 
         Quiz saved = quizRepository.save(quiz);
         QuizResponse quizResponse = quizMapper.toQuizResponse(saved);
-
-        List<QuizQuestion> quizQuestions = quizQuestionRepository.findAllByQuizIdWithDetails(saved.getId());
-        quizResponse.setQuestions(quizQuestions.stream()
-                .map(quizMapper::toQuizQuestionResponse)
-                .toList());
-        quizResponse.setTotalQuestions(quizQuestions.size());
-        int totalScore = quizQuestions.stream()
-            .map(QuizQuestion::getScore)
-            .filter(Objects::nonNull)
-            .mapToInt(Integer::intValue)
-            .sum();
         quizResponse.setTotalScore(totalScore);
 
         return quizResponse;
@@ -166,21 +159,9 @@ public class QuizServiceImpl implements QuizService {
                 () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
         );
 
-            List<QuizQuestion> quizQuestions = quizQuestionRepository.findAllByQuizIdWithDetails(quizId);
-
+        List<Question> quizQuestions = questionRepository.findByQuizId(quizId);
         QuizResponse quizResponse = quizMapper.toQuizResponse(quiz);
-        quizResponse.setQuestions(quizQuestions.stream()
-                .map(quizMapper::toQuizQuestionResponse)
-                .toList());
-        
         quizResponse.setTotalQuestions(quizQuestions.size());
-
-        int totalScore = quizQuestions.stream()
-            .map(QuizQuestion::getScore)
-            .filter(Objects::nonNull)
-            .mapToInt(Integer::intValue)
-            .sum();
-        quizResponse.setTotalScore(totalScore);
 
         return quizResponse;
     }
@@ -244,8 +225,7 @@ public class QuizServiceImpl implements QuizService {
         quizAttemptRepository.save(attempt);
 
         // 2. load questions + answers
-        List<QuizQuestion> quizQuestions = quizQuestionRepository.findAllByQuizIdWithDetails(quiz.getId());
-        List<Question> questions = quizQuestions.stream().map(QuizQuestion::getQuestion).toList();
+        List<Question> questions = questionRepository.findByQuizId(quiz.getId());
 
         Map<Long, Question> questionMap = questions.stream()
                 .collect(Collectors.toMap(Question::getId, q -> q));
@@ -324,16 +304,6 @@ public class QuizServiceImpl implements QuizService {
         }
 
         return questionRepository.findRandom(config.getAmount());
-    }
-
-    private QuizQuestion buildQuizQuestion (Quiz quiz, Question question, int orderIndex, int score) {
-        QuizQuestion quizQuestion = new QuizQuestion();
-        quizQuestion.setQuestion(question);
-        quizQuestion.setQuiz(quiz);
-        quizQuestion.setScore(score);
-        quizQuestion.setSortOrder(orderIndex);
-
-        return quizQuestion;
     }
 
     private void assertCanManageCourse(Course course) {
