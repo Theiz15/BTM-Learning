@@ -28,4 +28,6 @@ public class CourseSummaryResponse {
     private LocalDateTime publishDate;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
+    private String instructorName;
+    private String categoryName;
 }

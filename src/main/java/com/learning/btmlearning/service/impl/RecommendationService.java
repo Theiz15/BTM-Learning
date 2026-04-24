@@ -1,7 +1,6 @@
 package com.learning.btmlearning.service.impl;
 
 import com.learning.btmlearning.constant.CourseStatus;
-import com.learning.btmlearning.dto.response.CourseResponse;
 import com.learning.btmlearning.dto.response.CourseSummaryResponse;
 import com.learning.btmlearning.entity.Course;
 import com.learning.btmlearning.mapper.CourseMapper;
@@ -16,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,37 +27,50 @@ public class RecommendationService {
     CourseMapper courseMapper;
     SystemPromptBuilder systemPromptBuilder;
 
-    @Cacheable(value = "course_recommendations", key = "#userId")
+    private static final int TOP_N = 4;
+
+    @Cacheable(value = "course_recommendations", key = "#userId != null ? #userId : 'anonymous'")
     public List<CourseSummaryResponse> getRecommendations(Long userId) {
-        log.info("Get recommendations for user " + userId);
+        // --- Chưa đăng nhập: trả top 4 khóa phổ biến nhất của hệ thống ---
+        if (userId == null) {
+            log.info(">>> Anonymous user – trả top {} khóa phổ biến nhất", TOP_N);
+            List<Course> popularCourses = courseRepository.findTopRatedCourses(
+                    CourseStatus.ACTIVE, PageRequest.of(0, TOP_N));
+            return popularCourses.stream()
+                    .map(courseMapper::toCourseSummaryResponse)
+                    .collect(Collectors.toList());
+        }
 
+        log.info(">>> Get recommendations for userId={}", userId);
         var profile = userLearningProfileBuilder.buildProfile(userId);
-        List<Long> enrolledIds = profile.getEnrolledCourseIds().isEmpty() ? null : profile.getEnrolledCourseIds();
+        List<Long> enrolledIds = profile.getEnrolledCourseIds().isEmpty()
+                ? null : profile.getEnrolledCourseIds();
 
-        List<Course> recommendedCourses ;
+        List<Course> recommendedCourses;
 
-        if (profile.getTotalCompleted() < 3){
-            log.info("new user");
-
-            recommendedCourses = courseRepository.findTopRatedCourses(CourseStatus.ACTIVE , PageRequest.of(0, 10));
-
-            return recommendedCourses.stream().map(courseMapper::toCourseSummaryResponse).collect(java.util.stream.Collectors.toList());
+        if (profile.getTotalCompleted() < 3) {
+            log.info(">>> New user – trả top {} khóa được đánh giá cao", TOP_N);
+            recommendedCourses = courseRepository.findTopRatedCourses(
+                    CourseStatus.ACTIVE, PageRequest.of(0, TOP_N));
+            return recommendedCourses.stream()
+                    .map(courseMapper::toCourseSummaryResponse)
+                    .collect(Collectors.toList());
         }
 
-        //Call AI and handle FallBack
-        try{
-            List<Long> aiSuggestedCategories = systemPromptBuilder.getAiSuggestedCategories(profile.getLearnedCategoryIds());
-            log.info(">>> AI gợi ý các Category: {}", aiSuggestedCategories);
-
+        try {
+            List<Long> aiSuggestedCategories = systemPromptBuilder.getAiSuggestedCategories(
+                    profile.getLearnedCategoryIds());
+            log.info(">>> AI gợi ý categories: {}", aiSuggestedCategories);
             recommendedCourses = courseRepository.findRecommendedCourses(
-                    aiSuggestedCategories, enrolledIds, PageRequest.of(0, 10));
-
+                    aiSuggestedCategories, enrolledIds, PageRequest.of(0, TOP_N));
         } catch (Exception e) {
-            log.warn(">>> AI gặp lỗi, chuyển sang Fallback Content-Based. Lỗi: {}", e.getMessage());
+            log.warn(">>> AI gặp lỗi, fallback content-based. Lỗi: {}", e.getMessage());
             recommendedCourses = courseRepository.findRecommendedCourses(
-                    profile.getLearnedCategoryIds(), enrolledIds, PageRequest.of(0, 10));
+                    profile.getLearnedCategoryIds(), enrolledIds, PageRequest.of(0, TOP_N));
         }
 
-        return recommendedCourses.stream().map(courseMapper::toCourseSummaryResponse).collect(java.util.stream.Collectors.toList());
+        return recommendedCourses.stream()
+                .map(courseMapper::toCourseSummaryResponse)
+                .collect(Collectors.toList());
     }
 }

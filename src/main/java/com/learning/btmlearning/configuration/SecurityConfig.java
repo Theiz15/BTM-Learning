@@ -65,7 +65,8 @@ public class SecurityConfig {
                      "/api/v1/course/**",
                      "/api/v1/categories/**",
                      "/api/v1/course-reviews/course/**",
-                     "/api/v1/certificates/verify")
+                     "/api/v1/certificates/verify",
+                     "/api/v1/ai/chat/recommend")
                  .permitAll()
                  .anyRequest().authenticated()
 //                requests.anyRequest().permitAll()

@@ -72,9 +72,13 @@ public class AiChatController {
     }
 
     @GetMapping("/recommend")
-//    @PreAuthorize("isAuthenticated()")
     public ApiResponse<List<CourseSummaryResponse>> getRecommendations() {
-        Long userId = securityUtil.getCurrentUser().getId();
+        Long userId = null;
+        try {
+            userId = securityUtil.getCurrentUser().getId();
+        } catch (Exception ignored) {
+            // Chưa đăng nhập – sẽ trả top 4 phổ biến
+        }
         return ApiResponse.<List<CourseSummaryResponse>>builder()
                 .result(recommendationService.getRecommendations(userId))
                 .build();

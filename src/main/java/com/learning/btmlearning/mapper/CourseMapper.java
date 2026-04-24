@@ -27,6 +27,8 @@ public interface CourseMapper {
     @Mapping(target = "category", source = "category", qualifiedByName = "toCategoryResponse")
     CourseResponse toCourseResponse (Course course);
 
+    @Mapping(target = "instructorName", source = "instructor.fullName")
+    @Mapping(target = "categoryName",   source = "category.name")
     CourseSummaryResponse toCourseSummaryResponse (Course course);
 
     @Named("toSectionResponse")
