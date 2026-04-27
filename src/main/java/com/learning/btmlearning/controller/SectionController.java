@@ -4,75 +4,72 @@ import com.learning.btmlearning.dto.request.SectionRequest;
 import com.learning.btmlearning.dto.response.ApiResponse;
 import com.learning.btmlearning.dto.response.SectionResponse;
 import com.learning.btmlearning.service.SectionService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequestMapping("${api.prefix}")
 @RequiredArgsConstructor
-@RequestMapping("/api/v1")
 public class SectionController {
     private final SectionService sectionService;
 
     @PostMapping("/sections")
-    public ResponseEntity<ApiResponse<SectionResponse>> createSection(@RequestBody @Valid SectionRequest request) {
-        SectionResponse result = sectionService.createSection(request);
-
-        ApiResponse<SectionResponse> apiResponse = ApiResponse.<SectionResponse>builder()
-                .message("Section was created successfully")
-                .result(result)
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    public ApiResponse<SectionResponse> createSection(@RequestBody SectionRequest request) {
+        return ApiResponse.<SectionResponse>builder()
+                .message("Section created successfully")
+                .result(sectionService.createSection(request))
                 .build();
-
-        return ResponseEntity.ok(apiResponse);
     }
 
-    @PutMapping("/section/{sectionId}")
-    public ResponseEntity<ApiResponse<SectionResponse>> updateSection (@RequestBody @Valid SectionRequest request, @PathVariable Long sectionId) {
-        SectionResponse result = sectionService.updateSection(request, sectionId);
-
-        ApiResponse<SectionResponse> apiResponse = ApiResponse.<SectionResponse>builder()
-                .message("Section was updated successfully")
-                .result(result)
+    @PutMapping("/sections/{sectionId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    public ApiResponse<SectionResponse> updateSection(
+            @PathVariable Long sectionId,
+            @RequestBody SectionRequest request) {
+        return ApiResponse.<SectionResponse>builder()
+                .message("Section updated successfully")
+                .result(sectionService.updateSection(request, sectionId))
                 .build();
-
-        return ResponseEntity.ok(apiResponse);
     }
 
-    @DeleteMapping("/section/{sectionId}")
-    public ResponseEntity<ApiResponse<Void>> deleteSection (@PathVariable Long sectionId) {
+    @DeleteMapping("/sections/{sectionId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    public ApiResponse<Void> deleteSection(@PathVariable Long sectionId) {
         sectionService.deleteSection(sectionId);
 
-        ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
-                .message("Section was deleted successfully")
+        return ApiResponse.<Void>builder()
+                .message("Section deleted successfully")
                 .build();
-
-        return ResponseEntity.ok(apiResponse);
     }
 
-    @GetMapping("/section/{sectionId}")
-    public ResponseEntity<ApiResponse<SectionResponse>> getSection (@PathVariable Long sectionId) {
-        SectionResponse result = sectionService.getSection(sectionId);
-
-        ApiResponse<SectionResponse> apiResponse = ApiResponse.<SectionResponse>builder()
-                .message("Section was get successfully")
-                .result(result)
+    @GetMapping("/sections/{sectionId}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<SectionResponse> getSection(@PathVariable Long sectionId) {
+        return ApiResponse.<SectionResponse>builder()
+                .message("Get section successfully")
+                .result(sectionService.getSection(sectionId))
                 .build();
-
-        return ResponseEntity.ok(apiResponse);
     }
 
-    @GetMapping("/section")
-    public ResponseEntity<ApiResponse<List<SectionResponse>>> getAllSections() {
-        List<SectionResponse> result = sectionService.getAllSections();
-
-        ApiResponse<List<SectionResponse>> apiResponse = ApiResponse.<List<SectionResponse>>builder()
-                .message("All sections was get successfully")
-                .result(result)
+    @GetMapping("/sections")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<SectionResponse>> getAllSections() {
+        return ApiResponse.<List<SectionResponse>>builder()
+                .message("Get sections successfully")
+                .result(sectionService.getAllSections())
                 .build();
+    }
 
-        return ResponseEntity.ok(apiResponse);
+    @GetMapping("/courses/{courseId}/sections")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<SectionResponse>> getSectionsByCourse(@PathVariable Long courseId) {
+        return ApiResponse.<List<SectionResponse>>builder()
+                .message("Get sections by course successfully")
+                .result(sectionService.getSectionsByCourse(courseId))
+                .build();
     }
 }

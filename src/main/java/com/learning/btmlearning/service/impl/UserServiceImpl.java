@@ -79,6 +79,24 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    public UserProfile registerAsInstructor() {
+        User user = securityUtil.getCurrentUser();
+
+        if (user.getRole() == UserRole.INSTRUCTOR || user.getRole() == UserRole.ADMIN) {
+            throw new AppException(ErrorCode.USER_ALREADY_INSTRUCTOR);
+        }
+
+        user.setRole(UserRole.INSTRUCTOR);
+        userRepository.save(user);
+
+        // Force re-login so client receives a JWT containing the new role claim.
+        redisTemplate.delete("refresh:" + user.getId());
+
+        log.info(">>> User {} upgraded role to INSTRUCTOR", user.getEmail());
+        return userMapper.toUserProfile(user);
+    }
+
+    @Override
     public UserProfile getUserCourses() {
         return null;
     }

@@ -21,18 +21,21 @@ public class Quiz {
     private Long id;
 
     private String title;
+    @Column(columnDefinition = "TEXT")
+    private String description;
     private int timeLimitMin;
     private int passScore;
     private boolean isAiGenerated;
     private LocalDateTime createdAt;
+    private int totalScore;
 
     private Boolean shuffleQuestions = false;
     private Boolean shuffleAnswers = false;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "lesson_id")
     private Lesson lesson;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<QuizQuestion> questions;
+    @OneToMany(mappedBy = "quiz", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private List<Question> questions;
 }

@@ -2,6 +2,7 @@ package com.learning.btmlearning.repository;
 
 import com.learning.btmlearning.constant.CourseStatus;
 import com.learning.btmlearning.entity.Course;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,7 +15,7 @@ import java.util.Optional;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
-    @Query("SELECT c FROM Course  c JOIN c.instructor i WHERE c.status=:status")
+        @Query("SELECT c FROM Course c WHERE c.status=:status")
     Page<Course> findByStatus(CourseStatus status, Pageable pageable);
 
     @Query("SELECT c FROM Course c WHERE c.status=:status ORDER BY c.avgRating DESC")
@@ -33,4 +34,27 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c WHERE c.instructor.id = :userId AND c.id = :courseId")
     Optional<Course> findByInstructorIdAndCourseId(@Param("userId") Long userId,
                                                    @Param("courseId") Long courseId);
+
+        @Query("SELECT COUNT(c) FROM Course c WHERE c.instructor.id = :instructorId")
+        long countByInstructorId(@Param("instructorId") Long instructorId);
+
+        @Query("SELECT COUNT(c) FROM Course c WHERE c.instructor.id = :instructorId AND c.status IN :statuses")
+        long countByInstructorIdAndStatuses(@Param("instructorId") Long instructorId,
+                                                                                @Param("statuses") List<CourseStatus> statuses);
+
+        @Query("SELECT COUNT(c) FROM Course c WHERE c.instructor.id = :instructorId AND c.status = :status")
+        long countByInstructorIdAndStatus(@Param("instructorId") Long instructorId,
+                                                                          @Param("status") CourseStatus status);
+
+        @EntityGraph(attributePaths = {"instructor", "category"})
+        @Query("SELECT c FROM Course c WHERE c.instructor.id = :instructorId")
+        List<Course> findAllByInstructorId(@Param("instructorId") Long instructorId);
+
+        @EntityGraph(attributePaths = {"instructor", "category"})
+        @Query("SELECT c FROM Course c WHERE c.instructor.id = :instructorId AND c.status = :status ORDER BY c.createAt DESC")
+        List<Course> findByInstructorIdAndStatusOrderByCreateAtDesc(@Param("instructorId") Long instructorId,
+                                                                                                                                 @Param("status") CourseStatus status);
+
+        @EntityGraph(attributePaths = {"instructor", "category"})
+        List<Course> findByStatusOrderByCreateAtDesc(CourseStatus status);
 }

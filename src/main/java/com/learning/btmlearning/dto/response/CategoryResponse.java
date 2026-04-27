@@ -19,6 +19,9 @@ public class CategoryResponse {
     String name;
     String slug;
     String description;
+    String iconUrl;
+    Long parentId;
+    String parentName;
     Boolean isActive;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;

@@ -2,7 +2,6 @@ package com.learning.btmlearning.dto.response;
 
 import com.learning.btmlearning.constant.CourseStatus;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,6 +17,7 @@ public class CourseSummaryResponse {
     private String description;
     private String thumbnailUrl;
     private LocalDateTime discountEndDate;
+    private String campaignName;
     private BigDecimal originalPrice;
     private BigDecimal price;
     private String level;

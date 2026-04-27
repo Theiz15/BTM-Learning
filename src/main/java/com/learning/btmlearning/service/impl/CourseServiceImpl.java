@@ -1,6 +1,7 @@
 package com.learning.btmlearning.service.impl;
 
 import com.learning.btmlearning.constant.CourseStatus;
+import com.learning.btmlearning.constant.UserRole;
 import com.learning.btmlearning.dto.request.CourseDiscountRequest;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
@@ -12,6 +13,8 @@ import com.learning.btmlearning.mapper.CourseMapper;
 import com.learning.btmlearning.repository.CoursePromotionRepository;
 import com.learning.btmlearning.repository.CategoryRepository;
 import com.learning.btmlearning.repository.CourseRepository;
+import com.learning.btmlearning.repository.CourseReviewRepository;
+import com.learning.btmlearning.repository.EnrollmentRepository;
 import com.learning.btmlearning.repository.FileUploadRepository;
 import com.learning.btmlearning.service.CourseService;
 import com.learning.btmlearning.utils.SecurityUtil;
@@ -34,6 +37,8 @@ public class CourseServiceImpl implements CourseService {
     private final SecurityUtil securityUtil;
     private final CoursePromotionRepository coursePromotionRepository;
     private final CategoryRepository categoryRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final CourseReviewRepository courseReviewRepository;
 
     @Override
     public CourseResponse createCourse(CourseRequest request) {
@@ -62,26 +67,46 @@ public class CourseServiceImpl implements CourseService {
         course.setOriginalPrice(request.getPrice());
         course.setInstructor(user);
 
-        return courseMapper.toCourseResponse(courseRepository.save(course));
+        return toCourseResponseWithPromotion(courseRepository.save(course));
     }
 
     @Override
     public CourseResponse updateCourse(CourseRequest request, Long courseId) {
-        Course course = getCourse(courseId);
+        Course course = getManageableCourse(courseId);
 
         courseMapper.updateCourse(course, request);
         course.setUpdateAt(LocalDateTime.now());
+
+        if (request.getPrice() != null) {
+            course.setOriginalPrice(request.getPrice());
+        }
+
+        if (Objects.nonNull(request.getFileUploadId())) {
+            FileUpload fileUpload = fileUploadRepository.findById(request.getFileUploadId()).orElseThrow(
+                    () -> new AppException(ErrorCode.FILE_NOT_FOUND)
+            );
+
+            course.setThumbnailUrl(fileUpload.getFilePath());
+        }
+
+        if (Objects.nonNull(request.getCategoryId())) {
+            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(
+                    () -> new AppException(ErrorCode.CATEGORY_NOT_FOUND)
+            );
+
+            course.setCategory(category);
+        }
 
         if (request.getStatus() == CourseStatus.PUBLISHED) {
             course.setPublishDate(LocalDateTime.now());
         }
 
-        return courseMapper.toCourseResponse(courseRepository.save(course));
+        return toCourseResponseWithPromotion(courseRepository.save(course));
     }
 
     @Override
     public void deleteCourse(Long courseId) {
-        Course course = getCourse(courseId);
+        Course course = getManageableCourse(courseId);
 
         course.setStatus(CourseStatus.INACTIVE);
         courseRepository.save(course);
@@ -90,24 +115,36 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public List<CourseResponse> getAllCourses() {
         List<Course> courses = courseRepository.findAll();
-
-        return courses.stream().map(courseMapper::toCourseResponse).collect(Collectors.toList());
+        return courses.stream().map(this::toCourseResponseWithPromotion).collect(Collectors.toList());
     }
 
     @Override
     public CourseResponse getCourseById(Long courseId) {
-        Course course = getCourseAndValidateStatus(courseId) ;
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
 
-        return courseMapper.toCourseResponse(course);
+        if (!isVisibleToCurrentUser(course)) {
+            throw new AppException(ErrorCode.COURSE_NOT_FOUND);
+        }
+
+        return toCourseResponseWithPromotion(course);
     }
 
     @Override
     public Course findCourse(Long courseId) {
-        return getCourse(courseId);
+        return courseRepository.findById(courseId).orElseThrow(
+                () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
+        );
     }
 
-    private Course getCourse(Long courseId) {
+    private Course getManageableCourse(Long courseId) {
         User user = securityUtil.getCurrentUser();
+
+        if (user.getRole() == UserRole.ADMIN) {
+            return courseRepository.findById(courseId).orElseThrow(
+                    () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
+            );
+        }
 
         return courseRepository.findByInstructorIdAndCourseId(user.getId(), courseId).orElseThrow(
                 () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
@@ -118,12 +155,23 @@ public class CourseServiceImpl implements CourseService {
     public void updateCourseRating(Long courseId, double rating, long count) {
         Course course = findCourse(courseId);
         course.setAvgRating((float) rating);
+        course.setReviewCount((int) count);
         courseRepository.save(course);
     }
+
+    @Override
+    public List<CourseResponse> getAllCoursesWithInstructor() {
+        User user = securityUtil.getCurrentUser();
+
+        List<Course> courses = courseRepository.findAllByInstructorId(user.getId());
+        return courses.stream().map(this::toCourseResponseWithPromotion).collect(Collectors.toList());
+    }
+
+    @Override
     public Page<CourseResponse> getPendingCourses(Pageable pageable) {
         Page<Course> pendingCourses = courseRepository.findByStatus(CourseStatus.PENDING ,pageable) ;
 
-        return pendingCourses.map(courseMapper::toCourseResponse);
+        return pendingCourses.map(this::toCourseResponseWithPromotion);
     }
 
     @Override
@@ -145,8 +193,7 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseSummaryResponse updateCourseDiscount(Long courseId, CourseDiscountRequest request) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+        Course course = getManageableCourse(courseId);
 
         CoursePromotion promotion = CoursePromotion.builder()
                 .course(course)
@@ -166,7 +213,7 @@ public class CourseServiceImpl implements CourseService {
             course.setDiscountEndDate(request.getDiscountEndDate());
         }
 
-        return courseMapper.toCourseSummaryResponse(courseRepository.save(course));
+        return toCourseSummaryResponseWithPromotion(courseRepository.save(course));
     }
 
     private Course getCourseAndValidateStatus(Long courseId) {
@@ -177,5 +224,56 @@ public class CourseServiceImpl implements CourseService {
             throw new RuntimeException("Khóa học không ở trạng thái chờ duyệt (PENDING)");
         }
         return course;
+    }
+
+    private boolean isVisibleToCurrentUser(Course course) {
+        if (course.getStatus() == CourseStatus.ACTIVE || course.getStatus() == CourseStatus.PUBLISHED) {
+            return true;
+        }
+
+        try {
+            User currentUser = securityUtil.getCurrentUser();
+            if (currentUser.getRole() == UserRole.ADMIN) {
+                return true;
+            }
+
+            return course.getInstructor() != null
+                    && Objects.equals(course.getInstructor().getId(), currentUser.getId());
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private CourseResponse toCourseResponseWithPromotion(Course course) {
+        CourseResponse response = courseMapper.toCourseResponse(course);
+        response.setCampaignName(resolveLatestCampaignName(course.getId()));
+
+        // Dynamically compute real statistics from DB to handle historical data
+        long enrollmentCount = enrollmentRepository.countByCourseId(course.getId());
+        response.setTotalStudents((int) enrollmentCount);
+
+        CourseReviewRepository.RatingSummary ratingSummary =
+                courseReviewRepository.calculateCourseRatingSummary(course.getId());
+        if (ratingSummary != null) {
+            double avg = ratingSummary.getAvgRating() != null ? ratingSummary.getAvgRating() : 0.0;
+            long reviewCount = ratingSummary.getRatingCount() != null ? ratingSummary.getRatingCount() : 0L;
+            response.setAvgRating((float) avg);
+            response.setReviewCount((int) reviewCount);
+        }
+
+        return response;
+    }
+
+    private CourseSummaryResponse toCourseSummaryResponseWithPromotion(Course course) {
+        CourseSummaryResponse response = courseMapper.toCourseSummaryResponse(course);
+        response.setCampaignName(resolveLatestCampaignName(course.getId()));
+        return response;
+    }
+
+    private String resolveLatestCampaignName(Long courseId) {
+        return coursePromotionRepository
+                .findFirstByCourseIdOrderByStartDateDescIdDesc(courseId)
+                .map(CoursePromotion::getCampaignName)
+                .orElse(null);
     }
 }

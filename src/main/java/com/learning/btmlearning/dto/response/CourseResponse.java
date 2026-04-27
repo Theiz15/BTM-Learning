@@ -17,15 +17,18 @@ public class CourseResponse {
     private BigDecimal originalPrice;
     private BigDecimal price;
     private LocalDateTime discountEndDate;
+    private String campaignName;
     private String level;
     private CourseStatus status;
     private float avgRating;
     private int totalStudents;
     private int totalLessons;
+    private int reviewCount;
     private LocalDateTime publishDate;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
 
     private List<SectionResponse> sections;
     private CategoryResponse category;
+    private UserProfile instructor;
 }

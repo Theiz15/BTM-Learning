@@ -31,7 +31,7 @@ public class Payment {
     Course course;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "voucher_id", nullable = false)
+    @JoinColumn(name = "voucher_id")
     Voucher voucher;
 
     @Column(nullable = false, precision = 12, scale = 2)

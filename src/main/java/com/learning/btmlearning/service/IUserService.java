@@ -15,6 +15,7 @@ public interface IUserService {
     UserProfile updateUserProfile(UpdateProfileRequest request);
     void changePassword( ChangePasswordRequest request);
     UserProfile uploadAvatar(MultipartFile file);
+    UserProfile registerAsInstructor();
     UserProfile getUserCourses();
     Page<UserAdminResponse> getAllUsers(UserRole role,
                                         Boolean isActive,

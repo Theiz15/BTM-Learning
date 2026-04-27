@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> exception(Exception e) {
         ApiResponse<?> apiResponse = new ApiResponse<>();
-        log.error(e.getMessage());
+        log.error("Uncaught exception: ", e);
         apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorCode());
         apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorMsg());
         return ResponseEntity.badRequest().body(apiResponse);

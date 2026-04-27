@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -24,10 +26,11 @@ import java.io.IOException;
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     JwtService jwtService;
     UserRepository userRepository;
+    RedisTemplate<String, Object> redisTemplate;
 
-    @Value("${front-end.oauth2-redirect-url:http://localhost:3000/oauth2/redirect}")
-            @NonFinal
-    String redirectUrl ;
+    @Value("${front-end.oauth2-redirect-url:http://localhost:5173/oauth2/redirect}")
+    @NonFinal
+    String redirectUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -42,6 +45,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         // 1. Tạo bộ đôi Token nhà mình
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
+        long refreshTokenTtlMs = Math.max(jwtService.getExpiryDuration(refreshToken), 0);
+
+        if (refreshTokenTtlMs > 0) {
+            redisTemplate.opsForValue().set(
+                    "refresh:" + user.getId(),
+                    refreshToken,
+                    Duration.ofMillis(refreshTokenTtlMs)
+            );
+        }
 
         // 2. Điều hướng về Frontend kèm Token trên URL
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUrl)
