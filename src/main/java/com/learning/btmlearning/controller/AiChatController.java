@@ -3,8 +3,7 @@ package com.learning.btmlearning.controller;
 import com.learning.btmlearning.dto.request.AiChatMessageRequest;
 import com.learning.btmlearning.dto.request.CreateAiSessionRequest;
 import com.learning.btmlearning.dto.response.*;
-import com.learning.btmlearning.entity.AiChatSession;
-import com.learning.btmlearning.service.impl.AiChatService;
+import com.learning.btmlearning.service.impl.AiChatServiceImpl;
 import com.learning.btmlearning.service.impl.RecommendationService;
 import com.learning.btmlearning.utils.SecurityUtil;
 import jakarta.validation.Valid;
@@ -23,7 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AiChatController {
-    AiChatService aiChatService;
+    AiChatServiceImpl aiChatService;
     RecommendationService recommendationService;
     SecurityUtil securityUtil;
 

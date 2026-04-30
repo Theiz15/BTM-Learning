@@ -280,7 +280,7 @@ public class LessonServiceImpl implements LessonService {
         p.setStatus(ProgressStatus.IN_PROGRESS);
 
         int lessonDurationSeconds = Math.max(lesson.getDurationSeconds(), 1);
-        int completeThreshold = Math.max((int) Math.ceil(lessonDurationSeconds * 0.9), 1);
+        int completeThreshold = Math.max((int) Math.ceil(lessonDurationSeconds * 0.8), 1);
 
         if (watchedSeconds >= completeThreshold) {
             p.setStatus(ProgressStatus.COMPLETED);

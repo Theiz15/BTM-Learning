@@ -17,7 +17,6 @@ import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.repository.EnrollmentRepository;
 import com.learning.btmlearning.service.EnrollmentService;
 import com.learning.btmlearning.utils.SecurityUtil;
-import com.learning.btmlearning.service.NotificationService;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
@@ -41,7 +40,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final EnrollmentMapper enrollmentMapper;
     private final CourseRepository courseRepository;
-    private final NotificationService notificationService;
+    private final NotificationServiceImpl notificationService;
     private final SecurityUtil securityUtil;
 
     @Override

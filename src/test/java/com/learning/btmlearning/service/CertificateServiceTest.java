@@ -11,6 +11,8 @@ import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.repository.CertificateRepository;
 import com.learning.btmlearning.repository.UserRepository;
+import com.learning.btmlearning.service.impl.CertificateServiceImpl;
+import com.learning.btmlearning.service.impl.NotificationServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -40,10 +42,10 @@ class CertificateServiceTest {
     CourseService courseService;
 
     @Mock
-    NotificationService notificationService;
+    NotificationServiceImpl notificationService;
 
     @InjectMocks
-    CertificateService certificateService;
+    CertificateServiceImpl certificateService;
 
     @Test
     void autoIssueCertificate_validRequest_issuesCertificateAndNotifies() {

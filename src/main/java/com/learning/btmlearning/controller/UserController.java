@@ -7,7 +7,7 @@ import com.learning.btmlearning.dto.request.UpdateProfileRequest;
 import com.learning.btmlearning.dto.response.ApiResponse;
 import com.learning.btmlearning.dto.response.UserAdminResponse;
 import com.learning.btmlearning.dto.response.UserProfile;
-import com.learning.btmlearning.service.IUserService;
+import com.learning.btmlearning.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE ,makeFinal = true)
 public class UserController {
-    IUserService userService;
+    UserService userService;
 
     @GetMapping("/my-info")
     public ApiResponse<UserProfile> myInfo() {

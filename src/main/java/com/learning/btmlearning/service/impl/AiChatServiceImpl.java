@@ -18,7 +18,6 @@ import com.learning.btmlearning.mapper.AiChatSessionMapper;
 import com.learning.btmlearning.repository.AiChatSessionRepository;
 import com.learning.btmlearning.repository.AiMessageRepository;
 import com.learning.btmlearning.repository.CourseRepository;
-import com.learning.btmlearning.service.IAiChatService;
 import com.learning.btmlearning.utils.SecurityUtil;
 import com.learning.btmlearning.utils.SystemPromptBuilder;
 import jakarta.transaction.Transactional;
@@ -36,7 +35,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
 @Slf4j
-public class AiChatService implements IAiChatService {
+public class AiChatServiceImpl implements com.learning.btmlearning.service.AiChatService {
     AiChatSessionRepository sessionRepository;
     AiMessageRepository messageRepository;
     CourseRepository courseRepository;
