@@ -95,6 +95,7 @@ public class SectionServiceImpl implements SectionService {
 
     private void assertCanManageCourse(Course course) {
         User currentUser = securityUtil.getCurrentUser();
+
         if (currentUser.getRole() == UserRole.ADMIN) {
             return;
         }

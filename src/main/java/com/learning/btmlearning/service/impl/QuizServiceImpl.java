@@ -238,10 +238,10 @@ public class QuizServiceImpl implements QuizService {
         User user = securityUtil.getCurrentUser();
 
         Quiz quiz = quizRepository.findById(request.getQuizId())
-                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
 
         QuizAttempt attempt = QuizAttempt.builder()
-                .user((User) userRepository.findById(user.getId()).orElse(null))
+                .user(user)
                 .quiz(quiz)
                 .startedAt(LocalDateTime.now())
                 .build();

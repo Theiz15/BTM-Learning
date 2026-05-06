@@ -1,4 +1,4 @@
-package com.learning.btmlearning.service.impl;
+package com.learning.btmlearning.utils;
 
 import com.learning.btmlearning.repository.EnrollmentRepository;
 import lombok.AccessLevel;

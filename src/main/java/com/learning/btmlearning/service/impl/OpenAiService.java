@@ -4,9 +4,7 @@ import com.learning.btmlearning.configuration.OpenAiConfig;
 import com.learning.btmlearning.dto.response.OpenAiChatResponse;
 import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -27,10 +25,9 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class OpenAiService {
-    OpenAiConfig openAiConfig;
-    RestTemplate restTemplate = new RestTemplate();
+    private final OpenAiConfig openAiConfig;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Retryable(
             retryFor = { HttpClientErrorException.TooManyRequests.class },
@@ -50,15 +47,15 @@ public class OpenAiService {
 
         HttpEntity<Map<String ,Object>> request = new HttpEntity<>(requestBody, headers);
         try {
-            log.info(">>> Đang gửi yêu cầu tới AI Model: {}", openAiConfig.getModel());
+            log.info("Sending a request to the AI Model: {}", openAiConfig.getModel());
             return restTemplate.postForObject(
                     openAiConfig.getApiUrl(),
                     request,
                     OpenAiChatResponse.class
             );
         } catch (Exception e) {
-            log.error(">>> Lỗi khi gọi API OpenAI/Groq", e);
-            throw new RuntimeException("Không thể kết nối tới AI Server lúc này.");
+            log.error("Error when calling OpenAI/Groq API", e);
+            throw new RuntimeException("Unable to connect to the AI Server at this time.");
         }
     }
 
@@ -70,7 +67,7 @@ public class OpenAiService {
 
         requestBody.put("stream", true);
 
-        log.info(">>> Đang mở kết nối STREAM tới AI Model...");
+        log.info("Stream connection is being established to the AI Model...");
 
         return WebClient.builder().build().post()
                 .uri(openAiConfig.getApiUrl())
@@ -83,7 +80,7 @@ public class OpenAiService {
 
     @Recover
     public OpenAiChatResponse recover(HttpClientErrorException.TooManyRequests e) {
-        log.error(">>> Đã thử lại nhiều lần nhưng AI vẫn quá tải.");
+        log.error("We've tried multiple times, but the AI is still overloaded.");
         throw new AppException(ErrorCode.AI_SERVER_OVERLOADED);
     }
 

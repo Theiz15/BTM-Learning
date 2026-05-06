@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -53,6 +54,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    @Transactional
     public void changePassword(ChangePasswordRequest request) {
         User user = securityUtil.getCurrentUser();
 
@@ -110,6 +112,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    @Transactional
     public void toggleActive(Long id) {
         User user = userRepository.findById(id).orElseThrow(
                 () -> new AppException(ErrorCode.USER_NOT_EXISTED)
@@ -119,11 +122,12 @@ public class UserServiceImpl implements IUserService {
         userRepository.save(user);
 
         if (!user.getIsActive()){
-            redisTemplate.delete("refresh"+id);
+            redisTemplate.delete("refresh:" + id);
         }
     }
 
     @Override
+    @Transactional
     public UserProfile changeRole(Long id, ChangeRoleRequest rq) {
         User user = userRepository.findById(id).orElseThrow(()-> new AppException(ErrorCode.USER_NOT_EXISTED));
         Long userId = securityUtil.getCurrentUser().getId();

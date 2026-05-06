@@ -10,24 +10,22 @@ import com.learning.btmlearning.entity.*;
 import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.CourseMapper;
-import com.learning.btmlearning.repository.CoursePromotionRepository;
-import com.learning.btmlearning.repository.CategoryRepository;
-import com.learning.btmlearning.repository.CourseRepository;
-import com.learning.btmlearning.repository.CourseReviewRepository;
-import com.learning.btmlearning.repository.EnrollmentRepository;
-import com.learning.btmlearning.repository.FileUploadRepository;
+import com.learning.btmlearning.repository.*;
 import com.learning.btmlearning.service.CourseService;
 import com.learning.btmlearning.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CourseServiceImpl implements CourseService {
@@ -41,6 +39,7 @@ public class CourseServiceImpl implements CourseService {
     private final CourseReviewRepository courseReviewRepository;
 
     @Override
+    @Transactional
     public CourseResponse createCourse(CourseRequest request) {
         User user = securityUtil.getCurrentUser();
 
@@ -71,6 +70,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional
     public CourseResponse updateCourse(CourseRequest request, Long courseId) {
         Course course = getManageableCourse(courseId);
 
@@ -105,6 +105,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional
     public void deleteCourse(Long courseId) {
         Course course = getManageableCourse(courseId);
 
@@ -115,7 +116,9 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public List<CourseResponse> getAllCourses() {
         List<Course> courses = courseRepository.findAll();
-        return courses.stream().map(this::toCourseResponseWithPromotion).collect(Collectors.toList());
+
+//        log.info(courses.toString());
+        return courses.stream().map(course -> toCourseResponseWithPromotion(course)).collect(Collectors.toList());
     }
 
     @Override
@@ -175,6 +178,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional
     public void approveCourse(Long courseId) {
         Course course = getCourseAndValidateStatus(courseId) ;
 
@@ -184,6 +188,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional
     public void rejectCourse(Long courseId) {
         Course course =  getCourseAndValidateStatus(courseId) ;
 
@@ -192,6 +197,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional
     public CourseSummaryResponse updateCourseDiscount(Long courseId, CourseDiscountRequest request) {
         Course course = getManageableCourse(courseId);
 
@@ -221,7 +227,7 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
 
         if (!course.getStatus().equals(CourseStatus.PENDING)) {
-            throw new RuntimeException("Khóa học không ở trạng thái chờ duyệt (PENDING)");
+            throw new AppException(ErrorCode.COURSE_NOT_PENDING);
         }
         return course;
     }
@@ -245,6 +251,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     private CourseResponse toCourseResponseWithPromotion(Course course) {
+        log.info("Course :", course);
         CourseResponse response = courseMapper.toCourseResponse(course);
         response.setCampaignName(resolveLatestCampaignName(course.getId()));
 

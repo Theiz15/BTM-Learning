@@ -20,12 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -88,9 +83,9 @@ public class AnalyticsService {
 
         long totalLearners = enrollments.stream()
                 .map(Enrollment::getUser)
-                .filter(user -> user != null)
+                .filter(Objects::nonNull)
                 .map(User::getId)
-                .filter(id -> id != null)
+                .filter(Objects::nonNull)
                 .distinct()
                 .count();
 
@@ -161,7 +156,7 @@ public class AnalyticsService {
             int topLimit
     ) {
         Map<Long, String> courseTitleMap = courses.stream()
-                .filter(course -> course != null)
+                .filter(Objects::nonNull)
                 .filter(course -> course.getId() != null)
                 .collect(Collectors.toMap(
                         Course::getId,
@@ -170,7 +165,7 @@ public class AnalyticsService {
                 ));
 
         Map<Long, Long> enrollmentCountMap = enrollments.stream()
-                .filter(enrollment -> enrollment != null)
+                .filter(Objects::nonNull)
                 .filter(enrollment -> enrollment.getCourse() != null && enrollment.getCourse().getId() != null)
                 .collect(Collectors.groupingBy(
                         enrollment -> enrollment.getCourse().getId(),

@@ -6,7 +6,6 @@ import com.learning.btmlearning.dto.response.ApiResponse;
 import com.learning.btmlearning.dto.response.QuizAttemptResponse;
 import com.learning.btmlearning.dto.response.QuizResponse;
 import com.learning.btmlearning.service.QuizService;
-import com.learning.btmlearning.utils.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +19,6 @@ import java.util.List;
 @RequestMapping("/api/v1")
 public class QuizController {
     private final QuizService quizService;
-    private final SecurityUtil securityUtil;
 
     @PostMapping("/quizzes")
     @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
@@ -37,7 +35,7 @@ public class QuizController {
 
     @PutMapping("/quizzes/{quizId}")
     @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
-    public ResponseEntity<ApiResponse<QuizResponse>> updateQuiz(
+    public ResponseEntity<ApiResponse<QuizResponse>> updateQuiz (
             @PathVariable Long quizId,
             @RequestBody QuizRequest quizRequest
     ) {
@@ -66,8 +64,7 @@ public class QuizController {
     @PostMapping("/quiz/submit")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<QuizAttemptResponse>> submitQuiz(@RequestBody @Valid QuizAttemptRequest request){
-        Long userId = securityUtil.getCurrentUser().getId();
-        QuizAttemptResponse result = quizService.submitQuiz(userId, request);
+        QuizAttemptResponse result = quizService.submitQuiz(request);
 
         ApiResponse<QuizAttemptResponse> apiResponse = ApiResponse.<QuizAttemptResponse>builder()
                 .message("Attempt submitted")
@@ -90,7 +87,7 @@ public class QuizController {
     }
 
     @GetMapping("/quiz/lesson/{lessonId}")
-    public ResponseEntity<ApiResponse<QuizResponse>> getQuizByLesson(@PathVariable Long lessonId) {
+    public ResponseEntity<ApiResponse<QuizResponse>> getQuizByLesson (@PathVariable Long lessonId) {
         QuizResponse result = quizService.getQuizByLessonId(lessonId);
 
         ApiResponse<QuizResponse> apiResponse = ApiResponse.<QuizResponse>builder()

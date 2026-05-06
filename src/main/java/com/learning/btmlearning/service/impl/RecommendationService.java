@@ -1,12 +1,12 @@
 package com.learning.btmlearning.service.impl;
 
 import com.learning.btmlearning.constant.CourseStatus;
-import com.learning.btmlearning.dto.response.CourseResponse;
 import com.learning.btmlearning.dto.response.CourseSummaryResponse;
 import com.learning.btmlearning.entity.Course;
 import com.learning.btmlearning.mapper.CourseMapper;
 import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.utils.SystemPromptBuilder;
+import com.learning.btmlearning.utils.UserLearningProfileBuilder;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

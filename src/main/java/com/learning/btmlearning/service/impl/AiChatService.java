@@ -47,7 +47,6 @@ public class AiChatService implements IAiChatService {
     AiChatSessionMapper aiChatSessionMapper;
     ObjectMapper objectMapper;
 
-
     @Override
     @Transactional
     public AiChatSessionResponse createSession(Long courseId) {
@@ -68,8 +67,9 @@ public class AiChatService implements IAiChatService {
                 .lastActiveAt(LocalDateTime.now())
                 .build();
 
-        log.info(">>> Đã tạo Session AI mới: {} cho User: {}", session.getSessionToken(), user.getEmail());
+        log.info("New AI Session created: {} for User: {}", session.getSessionToken(), user.getEmail());
         sessionRepository.save(session) ;
+
         return aiChatSessionMapper.toResponse(session);
     }
 
@@ -230,13 +230,14 @@ public class AiChatService implements IAiChatService {
 
     private AiChatSession getAndVerifySession(String sessionToken) {
         AiChatSession session = sessionRepository.findBySessionToken(sessionToken)
-                .orElseThrow(() -> new RuntimeException("Phiên chat không tồn tại hoặc đã hết hạn"));
+                .orElseThrow(() -> new RuntimeException("The chat session does not exist or has expired."));
 
-        // Chống Hacker: Chỉ chủ nhân của Session mới được phép lấy lịch sử hoặc nhắn tin
+        //Anti-Hacker Measures: Only the session owner is allowed to access history or send messages.
         if (!session.getUser().getId().equals(securityUtil.getCurrentUser().getId())) {
-            log.warn(">>> Cảnh báo: User {} đang cố truy cập trái phép vào Session {}", securityUtil.getCurrentUser(), sessionToken);
+            log.warn("Warning: User {} is attempting unauthorized access to Session {}", securityUtil.getCurrentUser(), sessionToken);
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
+
         return session;
     }
 

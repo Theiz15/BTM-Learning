@@ -10,7 +10,6 @@ import java.util.*;
 
 @Configuration
 public class VNPayConfig {
-
     // Hàm tạo chữ ký bảo mật (HMAC SHA512)
     public static String hmacSHA512(final String key, final String data) {
         try {

@@ -3,34 +3,17 @@ package com.learning.btmlearning.exception;
 
 import com.learning.btmlearning.dto.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.nio.file.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<?>> exception(Exception e) {
-        ApiResponse<?> apiResponse = new ApiResponse<>();
-        log.error("Uncaught exception: ", e);
-        apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorCode());
-        apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorMsg());
-        return ResponseEntity.badRequest().body(apiResponse);
-    }
-
-//    @ExceptionHandler(RuntimeException.class)
-//    ResponseEntity<ApiResponse> runtimeExceptionHandler(RuntimeException e) {
-//        ApiResponse apiResponse = new ApiResponse();
-//
-//        apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorCode());
-//        apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorMsg());
-//        return ResponseEntity.badRequest().body(apiResponse);
-//    }
 
     @ExceptionHandler(AppException.class)
     ResponseEntity<ApiResponse<?>> appExceptionHandler(AppException e) {
@@ -42,10 +25,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getStatusCode()).body(apiResponse);
     }
 
-
     @ExceptionHandler(value = AccessDeniedException.class)
     ResponseEntity<ApiResponse<?>> accessDeniedExceptionHandler(AccessDeniedException e) {
-        ErrorCode errorCode = ErrorCode.UNAUTHORIZED ;
+        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
 
         return ResponseEntity.status(errorCode.getStatusCode()).body(
                 ApiResponse.builder()
@@ -56,14 +38,50 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = IllegalArgumentException.class)
-    ResponseEntity<ApiResponse> illegalArgumentException(IllegalArgumentException e) {
-        ErrorCode errorCode = ErrorCode.UNAUTHORIZED ;
+    ResponseEntity<ApiResponse<?>> illegalArgumentException(IllegalArgumentException e) {
+        log.error("IllegalArgumentException caught: ", e);
+        ErrorCode errorCode = ErrorCode.UNCATEGORIZED_EXCEPTION;
 
         return ResponseEntity.status(errorCode.getStatusCode()).body(
                 ApiResponse.builder()
                         .code(errorCode.getErrorCode())
-                        .message(errorCode.getErrorMsg())
+                        .message(e.getMessage())
                         .build()
         );
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    ResponseEntity<ApiResponse<?>> validationException(MethodArgumentNotValidException e) {
+        String message = e.getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .reduce((a, b) -> a + "; " + b)
+                .orElse("Validation failed");
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ApiResponse.builder()
+                        .code(ErrorCode.INVALID_KEY.getErrorCode())
+                        .message(message)
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    ResponseEntity<ApiResponse<?>> runtimeExceptionHandler(RuntimeException e) {
+        log.error("Uncaught RuntimeException: ", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.builder()
+                        .code(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorCode())
+                        .message(e.getMessage())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<?>> exception(Exception e) {
+        log.error("Uncaught exception: ", e);
+        ApiResponse<?> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorCode());
+        apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getErrorMsg());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
     }
 }

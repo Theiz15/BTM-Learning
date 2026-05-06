@@ -1,10 +1,13 @@
 package com.learning.btmlearning.service;
 
-import com.learning.btmlearning.dto.request.FileUploadRequest;
-import com.learning.btmlearning.dto.response.FileUploadResponse;
+import com.learning.btmlearning.dto.response.PdfContentResponse;
+import com.learning.btmlearning.dto.response.UploadDocumentResponse;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import java.io.IOException;
 
 public interface FileUploadService {
-    List<FileUploadResponse> uploadFile(FileUploadRequest request);
+    UploadDocumentResponse uploadPdf(MultipartFile file) throws IOException;
+    PdfContentResponse readPdf(String fileId);
+    String readPdfPage(String fileId, int pageNumber);
 }

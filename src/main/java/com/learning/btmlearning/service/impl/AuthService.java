@@ -13,9 +13,7 @@ import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.UserMapper;
 import com.learning.btmlearning.repository.UserRepository;
 import jakarta.transaction.Transactional;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,27 +28,26 @@ import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE , makeFinal = true)
 @Slf4j
 public class AuthService{
-    UserRepository userRepository;
-    PasswordEncoder passwordEncoder;
-    JwtService jwtService;
-    UserMapper userMapper ;
-    RedisTemplate<String, Object> redisTemplate;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final UserMapper userMapper ;
+    private final RedisTemplate<String, Object> redisTemplate;
 
-    AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
     @Value("${jwt.access-expiration}")
     @NonFinal
-    Long accessExpiration;
+    private Long accessExpiration;
 
     @NonFinal
     @Value("${jwt.refresh-expiration}")
-    Long refreshExpiration;
+    private Long refreshExpiration;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public void register(RegisterRequest request) {
         if(userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
@@ -65,13 +62,6 @@ public class AuthService{
                 .build();
 
         userRepository.save(user);
-
-        String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-
-        saveRefreshToken(user.getId(), refreshToken);
-
-        return buildAuthResponse(user, accessToken, refreshToken);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -82,20 +72,16 @@ public class AuthService{
                 )
         );
 
-        log.info(">>> User {} đã đăng nhập thành công qua Spring Security!", request.getEmail());
-         User user = userRepository.findByEmail(request.getEmail()).orElseThrow(
-                 () -> new AppException(ErrorCode.USER_NOT_EXISTED)
-         );
+        log.info("User {} successfully authenticated via Spring Security!", request.getEmail());
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(
+             () -> new AppException(ErrorCode.USER_NOT_EXISTED)
+        );
 
-        boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
-        if(!authenticated) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED) ;
-        }
-
-         String accessToken = jwtService.generateAccessToken(user);
-         String refreshToken = jwtService.generateRefreshToken(user);
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
         saveRefreshToken(user.getId(), refreshToken);
-         return buildAuthResponse(user, accessToken, refreshToken);
+
+        return buildAuthResponse(user, accessToken, refreshToken);
     }
 
     public AuthResponse refreshToken(RefreshRequest request) {
@@ -119,15 +105,13 @@ public class AuthService{
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-
-
         String newAccessToken = jwtService.generateAccessToken(user);
         String newRefreshToken = jwtService.generateRefreshToken(user);
 
         redisTemplate.opsForValue().set(
                 "refresh:" + userId,
                 newRefreshToken,
-                Duration.ofDays(7)
+                Duration.ofDays(3)
         );
 
         return buildAuthResponse(user, newAccessToken, newRefreshToken);
@@ -164,7 +148,7 @@ public class AuthService{
         redisTemplate.opsForValue().set(
                 "refresh:" + userId,
                 refreshToken,
-                Duration.ofMillis(refreshExpiration)
+                Duration.ofMinutes(refreshExpiration)
         );
     }
 }

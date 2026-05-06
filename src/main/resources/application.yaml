@@ -52,8 +52,8 @@ api:
 
 jwt:
   signerKey: ${JWT_SIGNER_KEY:local-dev-jwt-signer-key-change-me-please}
-  access-expiration: 900000
-  refresh-expiration: 604800000
+  access-expiration: 15
+  refresh-expiration: 1440
 
 front-end:
   oauth2-redirect-url: ${URL_FRONTEND:http://localhost:5173/oauth2/redirect}

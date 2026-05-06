@@ -35,9 +35,10 @@ public class VoucherServiceImpl implements VoucherService {
 
         Voucher voucher = validateAndGetVoucher(code) ;
 
-        BigDecimal discountAmount = course.getPrice().multiply(BigDecimal.valueOf(voucher.getDiscountPercent())).divide(BigDecimal.valueOf(100));
+        BigDecimal coursePrice = course.getPrice() != null ? course.getPrice() : BigDecimal.ZERO;
+        BigDecimal discountAmount = coursePrice.multiply(BigDecimal.valueOf(voucher.getDiscountPercent())).divide(BigDecimal.valueOf(100));
 
-        BigDecimal finalPrice = course.getPrice().subtract(discountAmount);
+        BigDecimal finalPrice = coursePrice.subtract(discountAmount);
         
         return VoucherCourseResponse.builder()
                 .code(code)

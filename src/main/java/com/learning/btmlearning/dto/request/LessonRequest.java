@@ -1,6 +1,5 @@
 package com.learning.btmlearning.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.learning.btmlearning.constant.LessonType;
 import lombok.Data;
 
@@ -8,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class  LessonRequest {
+public class LessonRequest {
     private String title;
     private int orderIndex;
     private LessonType lessonType;

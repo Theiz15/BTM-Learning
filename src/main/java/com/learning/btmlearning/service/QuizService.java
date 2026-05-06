@@ -13,6 +13,6 @@ public interface QuizService {
     QuizResponse getQuiz (Long quizId);
     QuizResponse getQuizByLessonId(Long lessonId);
     void deleteQuiz (Long quizId);
-    QuizAttemptResponse submitQuiz(Long userId, QuizAttemptRequest request);
+    QuizAttemptResponse submitQuiz(QuizAttemptRequest request);
     List<QuizResponse> getAllQuizzes();
 }

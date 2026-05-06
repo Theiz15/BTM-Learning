@@ -1,17 +1,16 @@
 package com.learning.btmlearning.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Table(name = "quizzes")
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -34,6 +33,7 @@ public class Quiz {
 
     @ManyToOne
     @JoinColumn(name = "lesson_id")
+    @JsonIgnore
     private Lesson lesson;
 
     @OneToMany(mappedBy = "quiz", cascade = {CascadeType.PERSIST, CascadeType.MERGE})

@@ -14,6 +14,7 @@ import org.mapstruct.*;
         componentModel = "spring",
         uses = {
                 SectionMapper.class,
+                CategoryMapper.class,
                 UserMapper.class
         }
 )

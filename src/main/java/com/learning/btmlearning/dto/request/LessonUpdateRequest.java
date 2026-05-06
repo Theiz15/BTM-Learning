@@ -1,6 +1,5 @@
 package com.learning.btmlearning.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.learning.btmlearning.constant.LessonType;
 import lombok.Data;
 

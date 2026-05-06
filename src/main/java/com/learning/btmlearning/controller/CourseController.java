@@ -24,7 +24,7 @@ public class CourseController {
     private final CourseService courseService;
 
     @PostMapping("/courses")
-        @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> createCourse(@RequestBody CourseRequest request) {
         CourseResponse result = courseService.createCourse(request);
 

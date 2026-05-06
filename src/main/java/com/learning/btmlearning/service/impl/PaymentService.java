@@ -60,7 +60,7 @@ public class PaymentService {
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
 
         if (course.getStatus() != CourseStatus.PUBLISHED && course.getStatus() != CourseStatus.ACTIVE) {
-            throw new RuntimeException("Course is not published");
+            throw new AppException(ErrorCode.COURSE_NOT_PUBLISHED);
         }
 
         User user = securityUtil.getCurrentUser();
@@ -107,7 +107,7 @@ public class PaymentService {
 
             if (appliedVoucher != null) {
                 appliedVoucher.setUsedCount(appliedVoucher.getUsedCount() + 1);
-                // voucherRepository.save(appliedVoucher);
+                 voucherRepository.save(appliedVoucher);
             }
 
             log.info(">>> Khách hàng {} đã nhận khóa học {} MIỄN PHÍ thành công!", user.getEmail(), course.getTitle());
@@ -139,13 +139,12 @@ public class PaymentService {
         vnp_Params.put("vnp_ReturnUrl", vnpReturnUrl);
         vnp_Params.put("vnp_IpAddr", request.getRemoteAddr());
 
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         vnp_Params.put("vnp_CreateDate", formatter.format(cld.getTime()));
 
         cld.add(Calendar.MINUTE, 15);
         vnp_Params.put("vnp_ExpireDate", formatter.format(cld.getTime()));
-
 
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
         Collections.sort(fieldNames);
@@ -184,7 +183,7 @@ public class PaymentService {
 
         Long paymentId = Long.parseLong(txnRef);
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch hợp lệ"));
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
 
         if (payment.getStatus() != PaymentStatus.PENDING) {
             return payment.getStatus() == PaymentStatus.SUCCESS;
@@ -207,6 +206,7 @@ public class PaymentService {
 
             if (voucher != null) {
                 voucher.setUsedCount(voucher.getUsedCount() + 1);
+                voucherRepository.save(voucher);
             }
 
             payment.getCourse().setTotalStudents(payment.getCourse().getTotalStudents() + 1);

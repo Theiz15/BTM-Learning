@@ -59,11 +59,11 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         );
 
         if (course.getStatus() != CourseStatus.PUBLISHED && course.getStatus() != CourseStatus.ACTIVE) {
-            throw new RuntimeException("Course is not published");
+            throw new AppException(ErrorCode.COURSE_NOT_PUBLISHED);
         }
 
         if (course.getPrice() != null && course.getPrice().compareTo(BigDecimal.ZERO) > 0) {
-            throw new RuntimeException("This course is not free. please use VNPAY's getway.");
+            throw new AppException(ErrorCode.COURSE_NOT_FREE);
         }
 
         enrollment.setUser(user);
@@ -95,17 +95,17 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         User user = securityUtil.getCurrentUser();
 
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId).orElseThrow(
-                () -> new RuntimeException("Enrollment not exist")
+                () -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND)
         );
 
         checkOwner(user.getId(), enrollment);
 
         if (enrollment.getStatus() == EnrollmentStatus.COMPLETED) {
-            throw new RuntimeException("Enrollment is already completed");
+            throw new AppException(ErrorCode.ENROLLMENT_ALREADY_COMPLETED);
         }
 
         if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
-            throw new RuntimeException("Enrollment is already cancelled");
+            throw new AppException(ErrorCode.ENROLLMENT_ALREADY_CANCELLED);
         }
 
         enrollment.setStatus(EnrollmentStatus.CANCELLED);
@@ -118,7 +118,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         User user = securityUtil.getCurrentUser();
 
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId).orElseThrow(
-                () -> new RuntimeException("Enrollment not exist")
+                () -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND)
         );
         checkOwner(user.getId(), enrollment);
 
@@ -130,13 +130,13 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         User user = securityUtil.getCurrentUser();
 
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId).orElseThrow(
-                () -> new RuntimeException("Enrollment not exist")
+                () -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND)
         );
 
         checkOwner(user.getId(), enrollment);
 
         if (enrollment.getStatus() != EnrollmentStatus.CANCELLED) {
-            throw new IllegalStateException("Chỉ có thể kích hoạt lại enrollment đã huỷ");
+            throw new AppException(ErrorCode.ENROLLMENT_CANNOT_REACTIVATE);
         }
 
         enrollment.setStatus(EnrollmentStatus.ACTIVE);
@@ -162,7 +162,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     private void checkOwner(Long userId, Enrollment enrollment) {
         if (!enrollment.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Not permission to enroll");
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
     }
 

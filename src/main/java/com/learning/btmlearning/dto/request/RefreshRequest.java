@@ -1,15 +1,16 @@
 package com.learning.btmlearning.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class RefreshRequest {
     @NotBlank(message = "Refresh token cannot blank")
-    String refreshToken ;
+    private String refreshToken ;
 }

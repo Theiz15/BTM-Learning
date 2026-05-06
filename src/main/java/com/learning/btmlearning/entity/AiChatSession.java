@@ -23,13 +23,12 @@ public class AiChatSession {
     @JoinColumn(name = "user_id", nullable = false)
     User user;
 
-    // Có thể chat chung (không gắn course) hoặc chat riêng trong 1 khóa học
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id")
     Course course;
 
     @Column(name = "session_token", nullable = false, unique = true)
-    String sessionToken; // Dùng UUID
+    String sessionToken;
 
     @Column(name = "last_active_at")
     LocalDateTime lastActiveAt;

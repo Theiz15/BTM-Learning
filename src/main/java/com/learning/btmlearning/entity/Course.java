@@ -2,10 +2,7 @@ package com.learning.btmlearning.entity;
 
 import com.learning.btmlearning.constant.CourseStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -14,7 +11,8 @@ import java.util.List;
 
 @Table(name = "courses")
 @Entity
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
