@@ -4,18 +4,20 @@ import com.learning.btmlearning.constant.LessonType;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
-public class  LessonRequest {
+public class LessonRequest {
     private String title;
     private int orderIndex;
     private LessonType lessonType;
     private int durationSeconds;
-    private boolean isPreview;
+    private boolean preview;
     private LocalDateTime createdAt;
 
     private Long sectionId;
     private Long fileUploadId;
     private Long quizId;
+    private List<Long> quizIds;
     private Long courseId;
 }

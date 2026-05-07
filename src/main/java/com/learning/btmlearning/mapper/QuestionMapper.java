@@ -8,16 +8,20 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 @Mapper(
-        componentModel = "spring"
+    componentModel = "spring",
+    uses = {
+        AnswerMapper.class
+    }
 )
 public interface QuestionMapper {
-    @Mapping(target = "quizzes", ignore = true)
+    @Mapping(target = "quiz", ignore = true)
     @Mapping(target = "answers", ignore = true)
     Question toQuestion (QuestionRequest request);
 
-    @Mapping(target = "quizzes", ignore = true)
+    @Mapping(target = "quiz", ignore = true)
     @Mapping(target = "answers", ignore = true)
     void updateQuestion(@MappingTarget Question question, QuestionRequest request);
 
+    @Mapping(target = "quizId", source = "quiz.id")
     QuestionResponse toQuestionResponse (Question question);
 }

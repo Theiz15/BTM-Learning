@@ -11,6 +11,6 @@ import lombok.experimental.FieldDefaults;
 public class AuthResponse {
     String accessToken;
     String refreshToken;
-    long expiresIn;           // giây
+    long expiresIn;
     UserProfile user;
 }

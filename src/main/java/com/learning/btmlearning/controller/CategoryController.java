@@ -6,9 +6,7 @@ import com.learning.btmlearning.dto.response.ApiResponse;
 import com.learning.btmlearning.dto.response.CategoryResponse;
 import com.learning.btmlearning.service.CategoryService;
 import jakarta.validation.Valid;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,9 +14,8 @@ import java.util.List;
 @RestController
 @RequestMapping("${api.prefix}/categories")
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CategoryController {
-    CategoryService categoryService;
+    private final CategoryService categoryService;
 
     @PostMapping
     public ApiResponse<CategoryResponse> createCategory(@Valid @RequestBody CategoryCreationRequest request) {

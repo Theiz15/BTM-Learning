@@ -1,5 +1,6 @@
 package com.learning.btmlearning.service.impl;
 
+import com.learning.btmlearning.constant.UserRole;
 import com.learning.btmlearning.dto.request.AnswerAttemptRequest;
 import com.learning.btmlearning.dto.request.QuizAttemptRequest;
 import com.learning.btmlearning.dto.request.QuizRequest;
@@ -11,6 +12,7 @@ import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.QuizMapper;
 import com.learning.btmlearning.repository.*;
 import com.learning.btmlearning.service.QuizService;
+import com.learning.btmlearning.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,39 +30,46 @@ public class QuizServiceImpl implements QuizService {
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
     private final QuizAttemptRepository quizAttemptRepository;
-    private final QuizQuestionRepository quizQuestionRepository;
     private final AnswerRepository answerRepository;
+    private final SecurityUtil securityUtil;
 
     @Override
+    @Transactional
     public QuizResponse createQuiz (QuizRequest request) {
         Quiz quiz = quizMapper.toQuiz(request);
+        List<QuizRequest.ManualQuestionItem> manualQuestions =
+            request.getManualQuestions() == null ? List.of() : request.getManualQuestions();
+        List<QuizRequest.RandomQuestionConfig> randomConfigs =
+            request.getRandomConfigs() == null ? List.of() : request.getRandomConfigs();
 
         if (Objects.nonNull(request.getLessonId())) {
             Lesson lesson = lessonRepository.findById(request.getLessonId()).orElseThrow(
                     () -> new AppException(ErrorCode.LESSON_NOT_FOUND)
             );
 
+            assertCanManageCourse(lesson.getCourse());
             quiz.setLesson(lesson);
         }
 
-        Map<Long, QuizQuestion> questionMap = new LinkedHashMap<>();
+        Map<Long, Question> questionMap = new LinkedHashMap<>();
+        int totalScore = 0;
 
         // Handle select question
-        if (!request.getManualQuestions().isEmpty()) {
-            for (QuizRequest.ManualQuestionItem item : request.getManualQuestions()) {
+        if (!manualQuestions.isEmpty()) {
+            for (QuizRequest.ManualQuestionItem item : manualQuestions) {
                 Question question = questionRepository.findById(item.getQuestionId()).orElseThrow(
                         () -> new AppException(ErrorCode.QUESTION_NOT_FOUND)
                 );
 
-                questionMap.put(question.getId(), buildQuizQuestion(quiz, question, item.getSortOrder(), item.getScore()));
+                if (questionMap.putIfAbsent(question.getId(), question) == null) {
+                    totalScore += item.getScore();
+                }
             }
         }
 
         // Random question
-        if (!request.getRandomConfigs().isEmpty()) {
-            int autoOrderIndex = questionMap.size();
-
-            for (QuizRequest.RandomQuestionConfig item : request.getRandomConfigs()) {
+        if (!randomConfigs.isEmpty()) {
+            for (QuizRequest.RandomQuestionConfig item : randomConfigs) {
                 List<Question> randomQuestion = fetchRandomQuestions(item);
 
                 if (randomQuestion.isEmpty()) {
@@ -68,53 +77,171 @@ public class QuizServiceImpl implements QuizService {
                 }
 
                 for (Question question : randomQuestion) {
-                    questionMap.putIfAbsent(question.getId(), buildQuizQuestion(quiz, question, autoOrderIndex++, item.getScore()));
+                    if (questionMap.putIfAbsent(question.getId(), question) == null) {
+                        totalScore += item.getScore();
+                    }
                 }
             }
         }
 
-        if (!questionMap.isEmpty()) {
-            throw new AppException(ErrorCode.INVALID_STOCK_QUESTION);
+        // Allow creating quiz with no questions (can add later)
+        quiz.setCreatedAt(LocalDateTime.now());
+        quiz.setTotalScore(totalScore);
+
+        // Must save quiz first to get its ID before linking questions
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        // Set quiz reference on each question (owning side of FK)
+        for (Question q : questionMap.values()) {
+            q.setQuiz(savedQuiz);
+        }
+        questionRepository.saveAll(questionMap.values());
+        savedQuiz.setQuestions(new ArrayList<>(questionMap.values()));
+
+        QuizResponse quizResponse = quizMapper.toQuizResponse(savedQuiz);
+        quizResponse.setTotalQuestions(questionMap.size());
+
+        return quizResponse;
+    }
+
+    @Override
+    @Transactional
+    public QuizResponse updateQuiz(QuizRequest request, Long quizId) {
+        Quiz quiz = quizRepository.findById(quizId).orElseThrow(
+                () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
+        );
+
+        if (quiz.getLesson() != null) {
+            assertCanManageCourse(quiz.getLesson().getCourse());
         }
 
-        quiz.setQuestions(new ArrayList<>(questionMap.values()));
-        quiz.setCreatedAt(LocalDateTime.now());
+        quiz.setTitle(request.getTitle());
+        quiz.setDescription(request.getDescription());
+        quiz.setTimeLimitMin(request.getTimeLimitMin());
+        quiz.setPassScore(request.getPassScore());
+        quiz.setShuffleQuestions(request.isShuffleQuestions());
+        quiz.setShuffleAnswers(request.isShuffleAnswers());
 
-        int totalScore = questionMap.values().stream().mapToInt(QuizQuestion::getScore).sum();
+        if (Objects.nonNull(request.getLessonId())) {
+            Lesson lesson = lessonRepository.findById(request.getLessonId()).orElseThrow(
+                    () -> new AppException(ErrorCode.LESSON_NOT_FOUND)
+            );
+            quiz.setLesson(lesson);
+        }
 
-        QuizResponse quizResponse = quizMapper.toQuizResponse(quizRepository.save(quiz));
+        List<QuizRequest.ManualQuestionItem> manualQuestions =
+            request.getManualQuestions() == null ? List.of() : request.getManualQuestions();
 
+        int totalScore = 0;
+
+        if (!manualQuestions.isEmpty()) {
+            // Detach quiz from previously assigned questions (set their quiz_id to null)
+            List<Question> oldQuestions = questionRepository.findByQuizId(quizId);
+            for (Question q : oldQuestions) {
+                q.setQuiz(null);
+            }
+            questionRepository.saveAll(oldQuestions);
+
+            Map<Long, Question> questionMap = new LinkedHashMap<>();
+            for (QuizRequest.ManualQuestionItem item : manualQuestions) {
+                Question question = questionRepository.findById(item.getQuestionId()).orElseThrow(
+                        () -> new AppException(ErrorCode.QUESTION_NOT_FOUND)
+                );
+                if (questionMap.putIfAbsent(question.getId(), question) == null) {
+                    totalScore += item.getScore();
+                }
+            }
+
+            // Set quiz reference on each question (owning side of FK)
+            for (Question q : questionMap.values()) {
+                q.setQuiz(quiz);
+            }
+            questionRepository.saveAll(questionMap.values());
+            quiz.setQuestions(new ArrayList<>(questionMap.values()));
+        }
+
+        Quiz saved = quizRepository.save(quiz);
+        QuizResponse quizResponse = quizMapper.toQuizResponse(saved);
         quizResponse.setTotalScore(totalScore);
 
         return quizResponse;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public QuizResponse getQuiz(Long quizId) {
         Quiz quiz = quizRepository.findById(quizId).orElseThrow(
                 () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
         );
 
-        return quizMapper.toQuizResponse(quiz);
+        List<Question> quizQuestions = questionRepository.findByQuizId(quizId);
+        QuizResponse quizResponse = quizMapper.toQuizResponse(quiz);
+        quizResponse.setTotalQuestions(quizQuestions.size());
+
+        return quizResponse;
     }
 
     @Override
+    @Transactional
+    public QuizResponse getQuizByLessonId(Long lessonId) {
+        Quiz quiz = quizRepository.findFirstByLessonIdOrderByIdDesc(lessonId)
+                .orElseGet(() -> recoverQuizBindingForLesson(lessonId)
+                        .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND)));
+
+        return getQuiz(quiz.getId());
+    }
+
+    private Optional<Quiz> recoverQuizBindingForLesson(Long lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId).orElse(null);
+        if (lesson == null) {
+            return Optional.empty();
+        }
+
+        String lessonTitle = lesson.getTitle() == null ? "" : lesson.getTitle().trim();
+        if (lessonTitle.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Optional<Quiz> orphanQuiz = quizRepository.findFirstByLessonIsNullAndTitleIgnoreCaseOrderByIdDesc(lessonTitle);
+        if (orphanQuiz.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Quiz quiz = orphanQuiz.get();
+        quiz.setLesson(lesson);
+        return Optional.of(quizRepository.save(quiz));
+    }
+
+    @Override
+    @Transactional
     public void deleteQuiz(Long quizId) {
         Quiz quiz = quizRepository.findById(quizId).orElseThrow(
                 () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
         );
 
+        if (quiz.getLesson() != null) {
+            assertCanManageCourse(quiz.getLesson().getCourse());
+        }
+
+        // Detach all questions from this quiz before deleting (keep them in the bank)
+        List<Question> linkedQuestions = questionRepository.findByQuizId(quizId);
+        for (Question q : linkedQuestions) {
+            q.setQuiz(null);
+        }
+        questionRepository.saveAll(linkedQuestions);
+
         quizRepository.delete(quiz);
     }
 
     @Transactional
-    public QuizAttemptResponse submitQuiz(Long userId, QuizAttemptRequest request) {
+    public QuizAttemptResponse submitQuiz(QuizAttemptRequest request) {
+        User user = securityUtil.getCurrentUser();
 
         Quiz quiz = quizRepository.findById(request.getQuizId())
-                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
 
         QuizAttempt attempt = QuizAttempt.builder()
-                .user((User) userRepository.findById(userId).orElse(null))
+                .user(user)
                 .quiz(quiz)
                 .startedAt(LocalDateTime.now())
                 .build();
@@ -122,8 +249,7 @@ public class QuizServiceImpl implements QuizService {
         quizAttemptRepository.save(attempt);
 
         // 2. load questions + answers
-        List<QuizQuestion> quizQuestions = quizQuestionRepository.findAllByQuizIdWithDetails(quiz.getId());
-        List<Question> questions = quizQuestions.stream().map(QuizQuestion::getQuestion).toList();
+        List<Question> questions = questionRepository.findByQuizId(quiz.getId());
 
         Map<Long, Question> questionMap = questions.stream()
                 .collect(Collectors.toMap(Question::getId, q -> q));
@@ -133,8 +259,9 @@ public class QuizServiceImpl implements QuizService {
                 .collect(Collectors.toMap(Answer::getId, a -> a));
 
         // 3. map answer
+        List<AnswerAttemptRequest> submittedAnswers = request.getAnswers() != null ? request.getAnswers() : new ArrayList<>();
         List<AttemptAnswer> attemptAnswers = mapToAttemptAnswers(
-                request.getAnswers(), attempt, questionMap, answerMap
+                submittedAnswers, attempt, questionMap, answerMap
         );
 
         attempt.setAttemptAnswers(attemptAnswers);
@@ -165,6 +292,12 @@ public class QuizServiceImpl implements QuizService {
                 .build();
     }
 
+    @Override
+    public List<QuizResponse> getAllQuizzes() {
+        List<Quiz> quizzes = quizRepository.findAll();
+        return quizzes.stream().map(quizMapper::toQuizResponse).toList();
+    }
+
     private List<AttemptAnswer> mapToAttemptAnswers(
             List<AnswerAttemptRequest> requests,
             QuizAttempt attempt,
@@ -186,7 +319,7 @@ public class QuizServiceImpl implements QuizService {
             aa.setEssayAnswer(req.getEssayAnswer());
 
             return aa;
-        }).toList();
+        }).collect(Collectors.toList());
     }
 
     private List<Question> fetchRandomQuestions(QuizRequest.RandomQuestionConfig config) {
@@ -197,13 +330,22 @@ public class QuizServiceImpl implements QuizService {
         return questionRepository.findRandom(config.getAmount());
     }
 
-    private QuizQuestion buildQuizQuestion (Quiz quiz, Question question, int orderIndex, int score) {
-        QuizQuestion quizQuestion = new QuizQuestion();
-        quizQuestion.setQuestion(question);
-        quizQuestion.setQuiz(quiz);
-        quizQuestion.setScore(score);
-        quizQuestion.setSortOrder(orderIndex);
+    private void assertCanManageCourse(Course course) {
+        User currentUser = securityUtil.getCurrentUser();
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return;
+        }
 
-        return quizQuestion;
+        // Standalone quiz (not linked to any course) — allow any instructor
+        if (course == null) {
+            return;
+        }
+
+        // Force-initialize lazy proxy to avoid null on lazy-loaded instructor
+        User instructor = course.getInstructor();
+        Long instructorId = instructor != null ? instructor.getId() : null;
+        if (instructorId == null || !Objects.equals(instructorId, currentUser.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
     }
 }

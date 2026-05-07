@@ -1,6 +1,7 @@
 package com.learning.btmlearning.service.impl;
 
 import com.learning.btmlearning.constant.CourseStatus;
+import com.learning.btmlearning.constant.UserRole;
 import com.learning.btmlearning.dto.request.CourseDiscountRequest;
 import com.learning.btmlearning.dto.request.CourseRequest;
 import com.learning.btmlearning.dto.response.CourseResponse;
@@ -9,22 +10,25 @@ import com.learning.btmlearning.entity.*;
 import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.CourseMapper;
-import com.learning.btmlearning.repository.CoursePromotionRepository;
-import com.learning.btmlearning.repository.CategoryRepository;
-import com.learning.btmlearning.repository.CourseRepository;
-import com.learning.btmlearning.repository.FileUploadRepository;
+import com.learning.btmlearning.repository.*;
 import com.learning.btmlearning.service.CourseService;
+import com.learning.btmlearning.utils.RegexPatternUtil;
 import com.learning.btmlearning.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CourseServiceImpl implements CourseService {
@@ -34,12 +38,16 @@ public class CourseServiceImpl implements CourseService {
     private final SecurityUtil securityUtil;
     private final CoursePromotionRepository coursePromotionRepository;
     private final CategoryRepository categoryRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final CourseReviewRepository courseReviewRepository;
 
     @Override
+    @Transactional
     public CourseResponse createCourse(CourseRequest request) {
         User user = securityUtil.getCurrentUser();
 
         Course course = courseMapper.toCourse(request);
+        course.setSlug(generateUniqueSlug(request.getSlug(), course.getId()));
 
         if (Objects.nonNull(request.getFileUploadId())) {
             FileUpload fileUpload = fileUploadRepository.findById(request.getFileUploadId()).orElseThrow(
@@ -62,26 +70,52 @@ public class CourseServiceImpl implements CourseService {
         course.setOriginalPrice(request.getPrice());
         course.setInstructor(user);
 
-        return courseMapper.toCourseResponse(courseRepository.save(course));
+        return toCourseResponseWithPromotion(courseRepository.save(course));
     }
 
     @Override
+    @Transactional
     public CourseResponse updateCourse(CourseRequest request, Long courseId) {
-        Course course = getCourse(courseId);
+        Course course = getManageableCourse(courseId);
 
         courseMapper.updateCourse(course, request);
         course.setUpdateAt(LocalDateTime.now());
+
+        if (Objects.nonNull(request.getSlug())) {
+            course.setSlug(generateUniqueSlug(request.getSlug(), course.getId()));
+        }
+
+        if (request.getPrice() != null) {
+            course.setOriginalPrice(request.getPrice());
+        }
+
+        if (Objects.nonNull(request.getFileUploadId())) {
+            FileUpload fileUpload = fileUploadRepository.findById(request.getFileUploadId()).orElseThrow(
+                    () -> new AppException(ErrorCode.FILE_NOT_FOUND)
+            );
+
+            course.setThumbnailUrl(fileUpload.getFilePath());
+        }
+
+        if (Objects.nonNull(request.getCategoryId())) {
+            Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(
+                    () -> new AppException(ErrorCode.CATEGORY_NOT_FOUND)
+            );
+
+            course.setCategory(category);
+        }
 
         if (request.getStatus() == CourseStatus.PUBLISHED) {
             course.setPublishDate(LocalDateTime.now());
         }
 
-        return courseMapper.toCourseResponse(courseRepository.save(course));
+        return toCourseResponseWithPromotion(courseRepository.save(course));
     }
 
     @Override
+    @Transactional
     public void deleteCourse(Long courseId) {
-        Course course = getCourse(courseId);
+        Course course = getManageableCourse(courseId);
 
         course.setStatus(CourseStatus.INACTIVE);
         courseRepository.save(course);
@@ -91,23 +125,37 @@ public class CourseServiceImpl implements CourseService {
     public List<CourseResponse> getAllCourses() {
         List<Course> courses = courseRepository.findAll();
 
-        return courses.stream().map(courseMapper::toCourseResponse).collect(Collectors.toList());
+//        log.info(courses.toString());
+        return courses.stream().map(this::toCourseResponseWithPromotion).collect(Collectors.toList());
     }
 
     @Override
     public CourseResponse getCourseById(Long courseId) {
-        Course course = getCourseAndValidateStatus(courseId) ;
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
 
-        return courseMapper.toCourseResponse(course);
+        if (!isVisibleToCurrentUser(course)) {
+            throw new AppException(ErrorCode.COURSE_NOT_FOUND);
+        }
+
+        return toCourseResponseWithPromotion(course);
     }
 
     @Override
     public Course findCourse(Long courseId) {
-        return getCourse(courseId);
+        return courseRepository.findById(courseId).orElseThrow(
+                () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
+        );
     }
 
-    private Course getCourse(Long courseId) {
+    private Course getManageableCourse(Long courseId) {
         User user = securityUtil.getCurrentUser();
+
+        if (user.getRole() == UserRole.ADMIN) {
+            return courseRepository.findById(courseId).orElseThrow(
+                    () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
+            );
+        }
 
         return courseRepository.findByInstructorIdAndCourseId(user.getId(), courseId).orElseThrow(
                 () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
@@ -118,15 +166,27 @@ public class CourseServiceImpl implements CourseService {
     public void updateCourseRating(Long courseId, double rating, long count) {
         Course course = findCourse(courseId);
         course.setAvgRating((float) rating);
+        course.setReviewCount((int) count);
         courseRepository.save(course);
-    }
-    public Page<CourseResponse> getPendingCourses(Pageable pageable) {
-        Page<Course> pendingCourses = courseRepository.findByStatus(CourseStatus.PENDING ,pageable) ;
-
-        return pendingCourses.map(courseMapper::toCourseResponse);
     }
 
     @Override
+    public List<CourseResponse> getAllCoursesWithInstructor() {
+        User user = securityUtil.getCurrentUser();
+
+        List<Course> courses = courseRepository.findAllByInstructorId(user.getId());
+        return courses.stream().map(this::toCourseResponseWithPromotion).collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<CourseResponse> getPendingCourses(Pageable pageable) {
+        Page<Course> pendingCourses = courseRepository.findByStatus(CourseStatus.PENDING ,pageable) ;
+
+        return pendingCourses.map(this::toCourseResponseWithPromotion);
+    }
+
+    @Override
+    @Transactional
     public void approveCourse(Long courseId) {
         Course course = getCourseAndValidateStatus(courseId) ;
 
@@ -136,6 +196,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional
     public void rejectCourse(Long courseId) {
         Course course =  getCourseAndValidateStatus(courseId) ;
 
@@ -144,9 +205,9 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional
     public CourseSummaryResponse updateCourseDiscount(Long courseId, CourseDiscountRequest request) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+        Course course = getManageableCourse(courseId);
 
         CoursePromotion promotion = CoursePromotion.builder()
                 .course(course)
@@ -166,7 +227,7 @@ public class CourseServiceImpl implements CourseService {
             course.setDiscountEndDate(request.getDiscountEndDate());
         }
 
-        return courseMapper.toCourseSummaryResponse(courseRepository.save(course));
+        return toCourseSummaryResponseWithPromotion(courseRepository.save(course));
     }
 
     private Course getCourseAndValidateStatus(Long courseId) {
@@ -174,8 +235,91 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
 
         if (!course.getStatus().equals(CourseStatus.PENDING)) {
-            throw new RuntimeException("Khóa học không ở trạng thái chờ duyệt (PENDING)");
+            throw new AppException(ErrorCode.COURSE_NOT_PENDING);
         }
         return course;
+    }
+
+    private boolean isVisibleToCurrentUser(Course course) {
+        if (course.getStatus() == CourseStatus.ACTIVE || course.getStatus() == CourseStatus.PUBLISHED) {
+            return true;
+        }
+
+        try {
+            User currentUser = securityUtil.getCurrentUser();
+            if (currentUser.getRole() == UserRole.ADMIN) {
+                return true;
+            }
+
+            return course.getInstructor() != null
+                    && Objects.equals(course.getInstructor().getId(), currentUser.getId());
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private CourseResponse toCourseResponseWithPromotion(Course course) {
+        log.info("Course :", course);
+        CourseResponse response = courseMapper.toCourseResponse(course);
+        response.setCampaignName(resolveLatestCampaignName(course.getId()));
+
+        // Dynamically compute real statistics from DB to handle historical data
+        long enrollmentCount = enrollmentRepository.countByCourseId(course.getId());
+        response.setTotalStudents((int) enrollmentCount);
+
+        CourseReviewRepository.RatingSummary ratingSummary =
+                courseReviewRepository.calculateCourseRatingSummary(course.getId());
+        if (ratingSummary != null) {
+            double avg = ratingSummary.getAvgRating() != null ? ratingSummary.getAvgRating() : 0.0;
+            long reviewCount = ratingSummary.getRatingCount() != null ? ratingSummary.getRatingCount() : 0L;
+            response.setAvgRating((float) avg);
+            response.setReviewCount((int) reviewCount);
+        }
+
+        return response;
+    }
+
+    private CourseSummaryResponse toCourseSummaryResponseWithPromotion(Course course) {
+        CourseSummaryResponse response = courseMapper.toCourseSummaryResponse(course);
+        response.setCampaignName(resolveLatestCampaignName(course.getId()));
+        return response;
+    }
+
+    private String resolveLatestCampaignName(Long courseId) {
+        return coursePromotionRepository
+                .findFirstByCourseIdOrderByStartDateDescIdDesc(courseId)
+                .map(CoursePromotion::getCampaignName)
+                .orElse(null);
+    }
+
+    private String generateUniqueSlug(String name, Long courseId) {
+        String baseSlug = toSlug(name);
+        String slug = baseSlug;
+        int suffix = 1;
+
+        while (isSlugTaken(slug, courseId)) {
+            slug = baseSlug + "-" + suffix++;
+        }
+
+        return slug;
+    }
+
+    private boolean isSlugTaken(String slug, Long courseId) {
+        if (courseId == null) {
+            return courseRepository.existsBySlug(slug);
+        }
+        return categoryRepository.existsBySlugAndIdNot(slug, courseId);
+    }
+
+    private String toSlug(String input) {
+        String safe = input == null ? "" : input;
+        String nowhitespace = RegexPatternUtil.WHITESPACE.matcher(safe.trim()).replaceAll("-");
+        String normalized = Normalizer.normalize(nowhitespace, Normalizer.Form.NFD);
+        String withoutDiacritics = normalized.replaceAll("\\p{M}+", "");
+        String slug = withoutDiacritics.toLowerCase(Locale.ROOT);
+        slug = RegexPatternUtil.NON_LATIN.matcher(slug).replaceAll("");
+        slug = slug.replaceAll("-+", "-");
+        slug = slug.replaceAll("^-+|-+$", "");
+        return slug.isBlank() ? "course" : slug;
     }
 }

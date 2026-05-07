@@ -18,6 +18,8 @@ public class CourseReviewResponse {
     Long id;
     Long courseId;
     Long userId;
+    String userFullName;
+    String userAvatarUrl;
     Integer rating;
     String comment;
     LocalDateTime createdAt;

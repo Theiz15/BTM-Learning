@@ -5,9 +5,9 @@ import com.learning.btmlearning.dto.response.ApiResponse;
 import com.learning.btmlearning.dto.response.CourseReviewResponse;
 import com.learning.btmlearning.service.CourseReviewService;
 import jakarta.validation.Valid;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,21 +15,25 @@ import java.util.List;
 @RestController
 @RequestMapping("${api.prefix}/course-reviews")
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CourseReviewController {
-    CourseReviewService courseReviewService;
+    private final CourseReviewService courseReviewService;
 
     @PostMapping
-    public ApiResponse<CourseReviewResponse> createReview(@Valid @RequestBody CourseReviewCreationRequest request) {
-        return ApiResponse.<CourseReviewResponse>builder()
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<CourseReviewResponse>> createReview(@Valid @RequestBody CourseReviewCreationRequest request) {
+        ApiResponse<CourseReviewResponse> apiResponse = ApiResponse.<CourseReviewResponse>builder()
                 .result(courseReviewService.createReview(request))
                 .build();
+
+        return ResponseEntity.ok(apiResponse);
     }
 
     @GetMapping("/course/{courseId}")
-    public ApiResponse<List<CourseReviewResponse>> getReviewsByCourse(@PathVariable Long courseId) {
-        return ApiResponse.<List<CourseReviewResponse>>builder()
+    public ResponseEntity<ApiResponse<List<CourseReviewResponse>>> getReviewsByCourse(@PathVariable Long courseId) {
+        ApiResponse<List<CourseReviewResponse>> apiResponse = ApiResponse.<List<CourseReviewResponse>>builder()
                 .result(courseReviewService.getReviewsByCourse(courseId))
                 .build();
+
+        return ResponseEntity.ok(apiResponse);
     }
 }

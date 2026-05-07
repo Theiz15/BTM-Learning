@@ -9,11 +9,14 @@ import java.util.List;
 public class QuizResponse {
     private Integer id;
     private String title;
+    private String description;
     private Integer timeLimit;
+    private Integer passScore;
     private boolean shuffleQuestions;
     private boolean shuffleAnswers;
     private Integer totalQuestions;
     private Integer totalScore;
     private LocalDateTime createdAt;
-    private List<QuizQuestionResponse> questions;
+    private Long lessonId;
+    private List<QuestionResponse> questions;
 }

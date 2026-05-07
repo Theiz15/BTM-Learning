@@ -32,4 +32,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
     List<Question> findRandom(
             @Param("amount") Integer amount
     );
+
+    List<Question> findByQuizId(Long quizId);
 }

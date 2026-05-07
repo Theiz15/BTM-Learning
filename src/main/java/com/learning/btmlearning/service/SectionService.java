@@ -11,4 +11,5 @@ public interface SectionService {
     void deleteSection (Long sectionId);
     SectionResponse getSection (Long sectionId);
     List<SectionResponse> getAllSections();
+    List<SectionResponse> getSectionsByCourse(Long courseId);
 }

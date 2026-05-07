@@ -10,16 +10,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -33,6 +34,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE ,makeFinal = true)
 public class SecurityConfig {
@@ -41,15 +43,14 @@ public class SecurityConfig {
 
     UserRepository userRepository;
 
-    private final String[] PUBLIC_ENDPOINTS = {
+    private static final String[] PUBLIC_ENDPOINTS = {
             "/favicon.ico",
-            "/api/v1/auth/log-in",
-            "/api/v1/auth/register",
-            "/api/v1/auth/google",
-            "/api/v1/users/*",
-            "/api/v1/payments/*",
-            "/api/v1/courses/*",
-            "/api/v1/auth/introspect"
+            "/api/v1/auth/**",
+            "/oauth2/**",
+            "/login/oauth2/**",
+            "/api/v1/files",
+            "/api/v1/payments/vnpay-return",
+            "/api/v1/payment/vnpay-return"
     };
 
     @Bean
@@ -58,8 +59,15 @@ public class SecurityConfig {
         httpSecurity.cors(Customizer.withDefaults());
 
         httpSecurity.authorizeHttpRequests(requests ->
-                 requests.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                         .anyRequest().authenticated()
+             requests.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                 .requestMatchers(HttpMethod.GET,
+                     "/api/v1/courses",
+                     "/api/v1/course/**",
+                     "/api/v1/categories/**",
+                     "/api/v1/course-reviews/course/**",
+                     "/api/v1/certificates/verify")
+                 .permitAll()
+                 .anyRequest().authenticated()
 //                requests.anyRequest().permitAll()
         );
 
@@ -68,10 +76,14 @@ public class SecurityConfig {
         );
 
         httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
-                .jwtAuthenticationConverter(jwtAuthenticationConverter())).authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+                .jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(403);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"code\":1011,\"message\":\"You do not have permission\"}");
+                })
         );
-
-
 
         return httpSecurity.build();
     }
@@ -102,7 +114,7 @@ public class SecurityConfig {
                         .password(user.getPasswordHash())
                         .authorities("ROLE_" + user.getRole().name())
                         .build())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_EXISTED));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 
     @Bean

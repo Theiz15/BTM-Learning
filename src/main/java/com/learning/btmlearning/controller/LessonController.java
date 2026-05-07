@@ -1,6 +1,7 @@
 package com.learning.btmlearning.controller;
 
 import com.learning.btmlearning.dto.request.LessonRequest;
+import com.learning.btmlearning.dto.request.LessonUpdateRequest;
 import com.learning.btmlearning.dto.request.UpdateProgressRequest;
 import com.learning.btmlearning.dto.response.ApiResponse;
 import com.learning.btmlearning.dto.response.CourseProgressResponse;
@@ -10,6 +11,7 @@ import com.learning.btmlearning.service.LessonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,12 +21,41 @@ public class LessonController {
     private final LessonService lessonService;
 
     @PostMapping("/lessons")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<LessonResponse>> createLesson(@RequestBody LessonRequest request) {
         LessonResponse result = lessonService.createLesson(request);
 
         ApiResponse<LessonResponse> apiResponse = ApiResponse.<LessonResponse>builder()
                 .message("Lesson is created successfully")
                 .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @PutMapping("/lessons/{lessonId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    public ResponseEntity<ApiResponse<LessonResponse>> updateLesson(
+            @PathVariable Long lessonId,
+            @RequestBody LessonUpdateRequest request
+    ) {
+        LessonResponse result = lessonService.updateLesson(request, lessonId);
+
+        ApiResponse<LessonResponse> apiResponse = ApiResponse.<LessonResponse>builder()
+                .message("Lesson is updated successfully")
+                .result(result)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping("/lessons/{lessonId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteLesson(@PathVariable Long lessonId) {
+        lessonService.deleteLesson(lessonId);
+
+        ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
+                .message("Lesson is deleted successfully")
                 .build();
 
         return ResponseEntity.ok(apiResponse);

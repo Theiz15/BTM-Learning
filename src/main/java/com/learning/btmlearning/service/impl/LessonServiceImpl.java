@@ -1,7 +1,9 @@
 package com.learning.btmlearning.service.impl;
 
 import com.learning.btmlearning.constant.EnrollmentStatus;
+import com.learning.btmlearning.constant.LessonType;
 import com.learning.btmlearning.constant.ProgressStatus;
+import com.learning.btmlearning.constant.UserRole;
 import com.learning.btmlearning.dto.request.LessonRequest;
 import com.learning.btmlearning.dto.request.LessonUpdateRequest;
 import com.learning.btmlearning.dto.request.UpdateProgressRequest;
@@ -16,7 +18,6 @@ import com.learning.btmlearning.mapper.LessonProgressMapper;
 import com.learning.btmlearning.repository.*;
 import com.learning.btmlearning.service.LessonService;
 import com.learning.btmlearning.utils.SecurityUtil;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -36,28 +38,15 @@ public class LessonServiceImpl implements LessonService {
     private final SectionRepository sectionRepository;
     private final QuizRepository quizRepository;
     private final LessonProgressRepository lessonProgressRepository;
-    private final UserRepository userRepository;
     private final LessonProgressMapper lessonProgressMapper;
     private final EnrollmentRepository enrollmentRepository;
     private final CourseRepository courseRepository;
     private final SecurityUtil securityUtil;
 
+    @Transactional
     @Override
     public LessonResponse createLesson(LessonRequest request) {
         Lesson lesson = lessonMapper.toLesson(request);
-
-        FileUpload fileUpload = fileUploadRepository.findById(request.getFileUploadId()).orElseThrow(
-                () -> new AppException(ErrorCode.FILE_NOT_FOUND)
-        );
-
-        switch (request.getLessonType()) {
-            case DOCUMENT -> lesson.setDocumentUrl(fileUpload.getFilePath());
-            case VIDEO -> lesson.setVideoUrl(fileUpload.getFilePath());
-            case QUIZ -> lesson.setQuiz(quizRepository.findById(request.getQuizId()).orElseThrow(
-                    () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
-            ));
-            default -> throw new IllegalStateException("Unexpected value: " + request.getLessonType());
-        }
 
         Section section = sectionRepository.findById(request.getSectionId()).orElseThrow(
                 () -> new AppException(ErrorCode.SECTION_NOT_FOUND)
@@ -67,6 +56,15 @@ public class LessonServiceImpl implements LessonService {
                 () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
         );
 
+        assertCanManageCourse(course);
+
+        if (section.getCourse() == null || !Objects.equals(section.getCourse().getId(), course.getId())) {
+            throw new AppException(ErrorCode.SECTION_NOT_FOUND);
+        }
+
+        // Collect quiz IDs (support both single quizId and list quizIds)
+        assignQuizToLesson(request.getQuizIds(), request.getQuizId(), lesson, request.getFileUploadId());
+
         lesson.setCreatedAt(LocalDateTime.now());
         lesson.setSection(section);
         lesson.setCourse(course);
@@ -74,16 +72,55 @@ public class LessonServiceImpl implements LessonService {
         return lessonMapper.toLessonResponse(lessonRepository.save(lesson));
     }
 
+    @Transactional
     @Override
     public LessonResponse updateLesson(LessonUpdateRequest request, Long lessonId) {
-        return null;
+        Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(
+                () -> new AppException(ErrorCode.LESSON_NOT_FOUND)
+        );
+
+        assertCanManageCourse(lesson.getCourse());
+
+        lessonMapper.updateLesson(lesson, request);
+
+        if (request.getSectionId() != null && (lesson.getSection() == null || !Objects.equals(lesson.getSection().getId(), request.getSectionId()))) {
+            Section section = sectionRepository.findById(request.getSectionId()).orElseThrow(
+                    () -> new AppException(ErrorCode.SECTION_NOT_FOUND)
+            );
+
+            assertCanManageCourse(section.getCourse());
+            lesson.setSection(section);
+            lesson.setCourse(section.getCourse());
+        }
+
+        // Only rebind resources when explicitly provided (avoid clearing quizzes when just updating title)
+        boolean hasFileUpdate = request.getFileUploadId() != null;
+        boolean hasQuizUpdate = request.getQuizIds() != null || request.getQuizId() != null;
+
+        if (hasFileUpdate || hasQuizUpdate) {
+            assignQuizToLesson(request.getQuizIds(), request.getQuizId(), lesson, request.getFileUploadId());
+        }
+
+        return lessonMapper.toLessonResponse(lessonRepository.save(lesson));
     }
 
+    @Transactional
     @Override
     public void deleteLesson(Long lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(
                 () -> new AppException(ErrorCode.LESSON_NOT_FOUND)
         );
+
+        assertCanManageCourse(lesson.getCourse());
+
+        // Detach quizzes from this lesson before deleting (keep quizzes intact)
+        if (lesson.getQuizzes() != null) {
+            for (Quiz quiz : lesson.getQuizzes()) {
+                quiz.setLesson(null);
+            }
+            quizRepository.saveAll(lesson.getQuizzes());
+            lesson.getQuizzes().clear();
+            }
 
         lessonRepository.delete(lesson);
     }
@@ -99,7 +136,7 @@ public class LessonServiceImpl implements LessonService {
                     Lesson lesson = lessonRepository.getReferenceById(lessonId);
 
                     LessonProgress progress = new LessonProgress();
-                    progress.setUser((com.learning.btmlearning.entity.User) userRepository.findById(user.getId()).orElse(null));
+                    progress.setUser(user);
                     progress.setLesson(lesson);
                     progress.setEnrollment(findEnrollment(user.getId(), lesson.getCourse().getId()));
                     progress.setWatchedSeconds(0);
@@ -115,42 +152,42 @@ public class LessonServiceImpl implements LessonService {
     public LessonProgressResponse updateProgress(UpdateProgressRequest request) {
         User user = securityUtil.getCurrentUser();
 
-        Lesson lesson = lessonRepository.findById(request.getLessonId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Lesson not found: " + request.getLessonId()));
+        Lesson lesson = lessonRepository.findByIdWithCourse(request.getLessonId())
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
 
         Long courseId = lesson.getSection().getCourse().getId();
 
         Enrollment enrollment = enrollmentRepository
                 .findByUserIdAndCourseId(user.getId(), courseId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "User chưa đăng ký khoá học này"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_ENROLLED));
 
-        // Upsert: lấy record cũ hoặc tạo mới
+        // Upsert: Select old record or create
         LessonProgress progress = lessonProgressRepository
                 .findByEnrollmentIdAndLessonId(enrollment.getId(), lesson.getId())
                 .orElseGet(() -> {
                     LessonProgress p = new LessonProgress();
+                    p.setUser(user);
                     p.setEnrollment(enrollment);
                     p.setLesson(lesson);
                     return p;
                 });
 
-        // Cập nhật theo loại lesson
+        //Update by lesson type
         switch (lesson.getLessonType()) {
             case VIDEO   -> updateVideoProgress(progress, request, lesson);
             case DOCUMENT -> updateReadingProgress(progress, request);
-            case QUIZ    -> updateQuizProgress(progress, request);
-        }
+            case QUIZ    -> {
+                Quiz quiz = quizRepository.findByIdAndLessonId(request.getQuizId(), lesson.getId()).orElseThrow(
+                        () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
+                );
 
-        progress.setWatchedSeconds(
-                    progress.getWatchedSeconds() + request.getWatchedSeconds());
+                updateQuizProgress(progress, request, quiz);
+            }
+        }
 
         progress.setLastWatchedAt(LocalDateTime.now());
 
-        // Check completed if not exist
-        if (progress.getIsCompleted()
-                && progress.getLastWatchedAt() == null) {
+        if (Boolean.TRUE.equals(progress.getIsCompleted()) && progress.getCompleteAt() == null) {
             progress.setCompleteAt(LocalDateTime.now());
         }
 
@@ -168,7 +205,7 @@ public class LessonServiceImpl implements LessonService {
 
         Enrollment enrollment = enrollmentRepository
                 .findByUserIdAndCourseId(user.getId(), courseId)
-                .orElseThrow(() -> new IllegalStateException("User not join this course"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_ENROLLED));
 
         // Map lessonId → progress for lookup O(1)
         Map<Long, LessonProgress> progressMap = lessonProgressRepository
@@ -223,36 +260,62 @@ public class LessonServiceImpl implements LessonService {
                 .build();
     }
 
-    private void updateVideoProgress(LessonProgress p, UpdateProgressRequest req, Lesson lesson) {
-        if (req.getWatchedSeconds() == 0) return;
-
-        if (req.getWatchedSeconds() > p.getWatchedSeconds()) {
-            p.setWatchedSeconds(req.getWatchedSeconds());
+    private void assignQuizToLesson (List<Long> quizIds, Long quizId, Lesson lesson, Long fileUploadId) {
+        List<Long> quizIdList = new ArrayList<>();
+        if (quizIds != null && !quizIds.isEmpty()) {
+            quizIdList.addAll(quizIds);
+        } else if (quizId != null) {
+            quizIdList.add(quizId);
         }
+        bindLessonResources(lesson, lesson.getLessonType(), fileUploadId, quizIdList);
+    }
 
-        int watched = Math.min(req.getWatchedSeconds(), lesson.getDurationSeconds());
+    private void updateVideoProgress(LessonProgress p, UpdateProgressRequest req, Lesson lesson) {
+        if (req.getWatchedSeconds() <= 0) return;
 
-        // If watch >= 90 % is auto complete
-        if (watched >= lesson.getDurationSeconds() * 0.9) {
+        int currentWatchedSeconds = p.getWatchedSeconds() == null ? 0 : p.getWatchedSeconds();
+        int watchedSeconds = Math.max(currentWatchedSeconds, req.getWatchedSeconds());
+        p.setWatchedSeconds(watchedSeconds);
+        p.setStatus(ProgressStatus.IN_PROGRESS);
+
+        int lessonDurationSeconds = Math.max(lesson.getDurationSeconds(), 1);
+        int completeThreshold = Math.max((int) Math.ceil(lessonDurationSeconds * 0.85), 1);
+
+        if (watchedSeconds >= completeThreshold) {
+            p.setStatus(ProgressStatus.COMPLETED);
             p.setIsCompleted(true);
         }
-
     }
 
     private void updateReadingProgress(LessonProgress p, UpdateProgressRequest req) {
-        // Reading is completed when user call API (frontend )
-        if (p.getIsCompleted()) {
-            p.setStatus(ProgressStatus.COMPLETED);
-        }
+            if (req == null) return;
+
+            if (Boolean.TRUE.equals(p.getIsCompleted())) return;
+
+            boolean isCompleted = false;
+
+            //Scroll percent
+            if (req.getScrollPercent() != null && req.getScrollPercent() >= 80) {
+                isCompleted = true;
+            }
+
+            // 4. Update status
+            if (isCompleted) {
+                p.setStatus(ProgressStatus.COMPLETED);
+                p.setIsCompleted(true);
+            } else {
+                p.setStatus(ProgressStatus.IN_PROGRESS);
+            }
     }
 
-    private void updateQuizProgress(LessonProgress p, UpdateProgressRequest req) {
+    private void updateQuizProgress(LessonProgress p, UpdateProgressRequest req, Quiz quiz) {
         if (req.getQuizScore() == null) return;
 
         p.setQuizScore(req.getQuizScore());
 
-        if (p.getStatus() != ProgressStatus.COMPLETED) {
+        if (req.getQuizScore() >= quiz.getPassScore()) {
             p.setStatus(ProgressStatus.COMPLETED);
+            p.setIsCompleted(true);
         }
     }
 
@@ -267,6 +330,8 @@ public class LessonServiceImpl implements LessonService {
 
         if (totalLessons > 0 && completedLessons >= totalLessons) {
             enrollment.setStatus(EnrollmentStatus.COMPLETED);
+            enrollment.setCompletedAt(LocalDateTime.now());
+            enrollment.setProgressPercent(100f);
             enrollmentRepository.save(enrollment);
         }
     }
@@ -299,5 +364,91 @@ public class LessonServiceImpl implements LessonService {
         return enrollmentRepository.findByUserIdAndCourseId(userId, courseId).orElseThrow(
                 () -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND)
         );
+    }
+
+    private void bindLessonResources(Lesson lesson, LessonType lessonType, Long fileUploadId, List<Long> quizIds) {
+        switch (lessonType) {
+            case DOCUMENT -> {
+                // Document: require file, optionally bind quizzes too
+                if (fileUploadId != null) {
+                    FileUpload fileUpload = fileUploadRepository.findById(fileUploadId).orElseThrow(
+                            () -> new AppException(ErrorCode.FILE_NOT_FOUND)
+                    );
+                    lesson.setDocumentUrl(fileUpload.getFilePath());
+                }
+                lesson.setVideoUrl(null);
+                // Bind quizzes if provided
+                bindQuizzes(lesson, quizIds);
+            }
+            case VIDEO -> {
+                if (fileUploadId != null) {
+                    FileUpload fileUpload = fileUploadRepository.findById(fileUploadId).orElseThrow(
+                            () -> new AppException(ErrorCode.FILE_NOT_FOUND)
+                    );
+                    lesson.setVideoUrl(fileUpload.getFilePath());
+                }
+                lesson.setDocumentUrl(null);
+                // Bind quizzes if provided
+                bindQuizzes(lesson, quizIds);
+            }
+            case QUIZ -> {
+                // Quiz-only lesson
+                lesson.setDocumentUrl(null);
+                lesson.setVideoUrl(null);
+                bindQuizzes(lesson, quizIds);
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + lessonType);
+        }
+    }
+
+    private void bindQuizzes(Lesson lesson, List<Long> quizIds) {
+        clearLessonQuizLinks(lesson);
+
+        if (quizIds == null || quizIds.isEmpty()) return;
+
+        for (Long quizId : quizIds) {
+            Quiz quiz = quizRepository.findById(quizId)
+                    .orElseThrow(() -> new AppException(ErrorCode.QUIZ_NOT_FOUND));
+
+            // Detach from previous lesson if needed
+            Lesson previousLesson = quiz.getLesson();
+            if (previousLesson != null
+                    && !Objects.equals(previousLesson.getId(), lesson.getId())
+                    && previousLesson.getQuizzes() != null) {
+                previousLesson.getQuizzes().removeIf(q -> Objects.equals(q.getId(), quiz.getId()));
+            }
+
+            quiz.setLesson(lesson);
+            ensureLessonQuizList(lesson).add(quiz);
+        }
+    }
+
+    private List<Quiz> ensureLessonQuizList(Lesson lesson) {
+        if (lesson.getQuizzes() == null) {
+            lesson.setQuizzes(new ArrayList<>());
+        }
+        return lesson.getQuizzes();
+    }
+
+    private void clearLessonQuizLinks(Lesson lesson) {
+        List<Quiz> quizzes = ensureLessonQuizList(lesson);
+        for (Quiz existingQuiz : quizzes) {
+            if (existingQuiz != null && existingQuiz.getLesson() != null) {
+                existingQuiz.setLesson(null);
+            }
+        }
+        quizzes.clear();
+    }
+
+    private void assertCanManageCourse(Course course) {
+        User currentUser = securityUtil.getCurrentUser();
+
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        if (course == null || course.getInstructor() == null || !Objects.equals(course.getInstructor().getId(), currentUser.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
     }
 }

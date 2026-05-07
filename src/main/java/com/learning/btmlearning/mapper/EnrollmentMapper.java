@@ -19,6 +19,7 @@ public interface EnrollmentMapper {
     Enrollment toEnrollment (EnrollmentRequest request);
 
     @Mapping(target = "course", source = "course", qualifiedByName = "toCourseResponse")
+    @Mapping(target = "userId", source = "user.id")
     EnrollmentResponse toEnrollmentResponse (Enrollment enrollment);
 
     @Named("toCourseResponse")

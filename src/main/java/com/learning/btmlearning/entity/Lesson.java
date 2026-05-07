@@ -1,17 +1,18 @@
 package com.learning.btmlearning.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.learning.btmlearning.constant.LessonType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Table(name = "lessons")
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -22,19 +23,22 @@ public class Lesson {
 
     private String title;
     private int orderIndex;
+
+    @Enumerated(EnumType.STRING)
     private LessonType lessonType;
     private String videoUrl;
     private String documentUrl;
     private int durationSeconds;
-    private boolean isPreview;
+    private boolean preview;
     private LocalDateTime createdAt;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id")
+    @JsonIgnore
     private Section section;
 
-    @OneToOne(mappedBy = "lesson", cascade = CascadeType.ALL)
-    private Quiz quiz;
+    @OneToMany(mappedBy = "lesson", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private List<Quiz> quizzes = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id")

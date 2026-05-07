@@ -22,7 +22,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     SecurityUtil securityUtil;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         if (!request.getMethod().equalsIgnoreCase("POST")) {
             return true;
         }
@@ -36,7 +36,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                 return true;
             }
 
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(ErrorCode.RATE_LIMIT);
 
         } catch (Exception e) {
             return true;

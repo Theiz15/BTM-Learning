@@ -16,7 +16,7 @@ spring:
     password: ${DB_PASSWORD:}
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -52,22 +52,22 @@ api:
 
 jwt:
   signerKey: ${JWT_SIGNER_KEY:local-dev-jwt-signer-key-change-me-please}
-  access-expiration: 900000
-  refresh-expiration: 604800000
+  access-expiration: 15
+  refresh-expiration: 1440
 
 front-end:
-  oauth2-redirect-url: ${URL_FRONTEND:http://localhost:3000/oauth2/redirect}
+  oauth2-redirect-url: ${URL_FRONTEND:http://localhost:5173/oauth2/redirect}
 
 vnpay:
   tmn-code: ${TMN_CODE:demo_tmn_code}
   hash-secret: ${HASH_SECRET:demo_hash_secret}
   pay-url: ${PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
-  return-url: ${RETURN_URL:http://localhost:8088/api/v1/payment/vnpay-return}
+  return-url: ${RETURN_URL:http://localhost:8088/api/v1/payments/vnpay-return}
   api-url: ${API_URL_VNPAY:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
-  frontend-return-url: ${FRONTEND_RETURN_URL:http://localhost:3000/payment-return}
+  frontend-return-url: ${FRONTEND_RETURN_URL:http://localhost:5173/payment-return}
 
 openai:
-  api-url: ${API_URL_OPEN_AI:https://api.openai.com/v1/chat/completions}
+  api-url: ${API_URL_OPEN_AI}
   api-key: ${API_KEY:demo-openai-api-key}
   model: ${MODEL:gpt-4o-mini}
   max-tokens: 1000

@@ -31,6 +31,12 @@ public class Category {
     @Column(columnDefinition = "TEXT")
     String description;
 
+    String iconUrl;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_category_id")
+    Category parentCategory;
+
     Boolean isActive = true;
 
     @CreationTimestamp

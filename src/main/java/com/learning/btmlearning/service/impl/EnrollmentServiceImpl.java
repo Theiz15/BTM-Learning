@@ -15,7 +15,6 @@ import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.EnrollmentMapper;
 import com.learning.btmlearning.repository.CourseRepository;
 import com.learning.btmlearning.repository.EnrollmentRepository;
-import com.learning.btmlearning.repository.UserRepository;
 import com.learning.btmlearning.service.EnrollmentService;
 import com.learning.btmlearning.utils.SecurityUtil;
 import com.learning.btmlearning.service.NotificationService;
@@ -23,6 +22,7 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,17 +36,17 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final EnrollmentMapper enrollmentMapper;
-    private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final NotificationService notificationService;
     private final SecurityUtil securityUtil;
 
     @Override
     @Transactional
-    @CacheEvict(value = "recommendations", key = "#userId")
+    @CacheEvict(value = "course_recommendations", key = "#result.userId")
     public EnrollmentResponse enroll(EnrollmentRequest request) {
         Enrollment enrollment = enrollmentMapper.toEnrollment(request);
 
@@ -58,12 +58,12 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 () -> new AppException(ErrorCode.COURSE_NOT_FOUND)
         );
 
-        if (course.getStatus() != CourseStatus.PUBLISHED) {
-            throw new RuntimeException("Course is not published");
+        if (course.getStatus() != CourseStatus.PUBLISHED && course.getStatus() != CourseStatus.ACTIVE) {
+            throw new AppException(ErrorCode.COURSE_NOT_PUBLISHED);
         }
 
         if (course.getPrice() != null && course.getPrice().compareTo(BigDecimal.ZERO) > 0) {
-            throw new RuntimeException("This course is not free. please use VNPAY's getway.");
+            throw new AppException(ErrorCode.COURSE_NOT_FREE);
         }
 
         enrollment.setUser(user);
@@ -71,14 +71,21 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         enrollment.setStatus(EnrollmentStatus.ACTIVE);
         enrollment.setPaymentStatus(PaymentStatus.FREE);
 
+        course.setTotalStudents(course.getTotalStudents() + 1);
+        courseRepository.save(course);
+
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
 
-        notificationService.notifyUser(
-                user.getId(),
-                "Enrollment Confirmed",
-                "You have successfully enrolled in the course '" + course.getTitle() + "'. Start learning anytime from your dashboard.",
-                NotificationType.ENROLLMENT_CONFIRMED
-        );
+        try {
+            notificationService.notifyUser(
+                    user.getId(),
+                    "Enrollment Confirmed",
+                    "You have successfully enrolled in the course '" + course.getTitle() + "'.",
+                    NotificationType.ENROLLMENT_CONFIRMED
+            );
+        } catch (Exception e) {
+            log.error("Failed to send notification", e);
+        }
 
         return enrollmentMapper.toEnrollmentResponse(savedEnrollment);
     }
@@ -88,17 +95,17 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         User user = securityUtil.getCurrentUser();
 
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId).orElseThrow(
-                () -> new RuntimeException("Enrollment not exist")
+                () -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND)
         );
 
         checkOwner(user.getId(), enrollment);
 
         if (enrollment.getStatus() == EnrollmentStatus.COMPLETED) {
-            throw new RuntimeException("Enrollment is already completed");
+            throw new AppException(ErrorCode.ENROLLMENT_ALREADY_COMPLETED);
         }
 
         if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
-            throw new RuntimeException("Enrollment is already cancelled");
+            throw new AppException(ErrorCode.ENROLLMENT_ALREADY_CANCELLED);
         }
 
         enrollment.setStatus(EnrollmentStatus.CANCELLED);
@@ -111,7 +118,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         User user = securityUtil.getCurrentUser();
 
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId).orElseThrow(
-                () -> new RuntimeException("Enrollment not exist")
+                () -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND)
         );
         checkOwner(user.getId(), enrollment);
 
@@ -123,13 +130,13 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         User user = securityUtil.getCurrentUser();
 
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId).orElseThrow(
-                () -> new RuntimeException("Enrollment not exist")
+                () -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND)
         );
 
         checkOwner(user.getId(), enrollment);
 
         if (enrollment.getStatus() != EnrollmentStatus.CANCELLED) {
-            throw new IllegalStateException("Chỉ có thể kích hoạt lại enrollment đã huỷ");
+            throw new AppException(ErrorCode.ENROLLMENT_CANNOT_REACTIVATE);
         }
 
         enrollment.setStatus(EnrollmentStatus.ACTIVE);
@@ -155,7 +162,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     private void checkOwner(Long userId, Enrollment enrollment) {
         if (!enrollment.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Not permission to enroll");
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
     }
 
