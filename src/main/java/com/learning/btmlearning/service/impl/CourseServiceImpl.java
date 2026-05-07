@@ -12,6 +12,7 @@ import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.mapper.CourseMapper;
 import com.learning.btmlearning.repository.*;
 import com.learning.btmlearning.service.CourseService;
+import com.learning.btmlearning.utils.RegexPatternUtil;
 import com.learning.btmlearning.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -44,6 +47,7 @@ public class CourseServiceImpl implements CourseService {
         User user = securityUtil.getCurrentUser();
 
         Course course = courseMapper.toCourse(request);
+        course.setSlug(generateUniqueSlug(request.getSlug(), course.getId()));
 
         if (Objects.nonNull(request.getFileUploadId())) {
             FileUpload fileUpload = fileUploadRepository.findById(request.getFileUploadId()).orElseThrow(
@@ -76,6 +80,10 @@ public class CourseServiceImpl implements CourseService {
 
         courseMapper.updateCourse(course, request);
         course.setUpdateAt(LocalDateTime.now());
+
+        if (Objects.nonNull(request.getSlug())) {
+            course.setSlug(generateUniqueSlug(request.getSlug(), course.getId()));
+        }
 
         if (request.getPrice() != null) {
             course.setOriginalPrice(request.getPrice());
@@ -118,7 +126,7 @@ public class CourseServiceImpl implements CourseService {
         List<Course> courses = courseRepository.findAll();
 
 //        log.info(courses.toString());
-        return courses.stream().map(course -> toCourseResponseWithPromotion(course)).collect(Collectors.toList());
+        return courses.stream().map(this::toCourseResponseWithPromotion).collect(Collectors.toList());
     }
 
     @Override
@@ -282,5 +290,36 @@ public class CourseServiceImpl implements CourseService {
                 .findFirstByCourseIdOrderByStartDateDescIdDesc(courseId)
                 .map(CoursePromotion::getCampaignName)
                 .orElse(null);
+    }
+
+    private String generateUniqueSlug(String name, Long courseId) {
+        String baseSlug = toSlug(name);
+        String slug = baseSlug;
+        int suffix = 1;
+
+        while (isSlugTaken(slug, courseId)) {
+            slug = baseSlug + "-" + suffix++;
+        }
+
+        return slug;
+    }
+
+    private boolean isSlugTaken(String slug, Long courseId) {
+        if (courseId == null) {
+            return courseRepository.existsBySlug(slug);
+        }
+        return categoryRepository.existsBySlugAndIdNot(slug, courseId);
+    }
+
+    private String toSlug(String input) {
+        String safe = input == null ? "" : input;
+        String nowhitespace = RegexPatternUtil.WHITESPACE.matcher(safe.trim()).replaceAll("-");
+        String normalized = Normalizer.normalize(nowhitespace, Normalizer.Form.NFD);
+        String withoutDiacritics = normalized.replaceAll("\\p{M}+", "");
+        String slug = withoutDiacritics.toLowerCase(Locale.ROOT);
+        slug = RegexPatternUtil.NON_LATIN.matcher(slug).replaceAll("");
+        slug = slug.replaceAll("-+", "-");
+        slug = slug.replaceAll("^-+|-+$", "");
+        return slug.isBlank() ? "course" : slug;
     }
 }

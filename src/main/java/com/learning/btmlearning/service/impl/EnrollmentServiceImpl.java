@@ -46,7 +46,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "recommendations", key = "#result.userId")
+    @CacheEvict(value = "course_recommendations", key = "#result.userId")
     public EnrollmentResponse enroll(EnrollmentRequest request) {
         Enrollment enrollment = enrollmentMapper.toEnrollment(request);
 

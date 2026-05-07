@@ -107,15 +107,17 @@ public class NotificationService {
     }
 
     private Notification saveNotification(User user, String title, String message, NotificationType type) {
-        Notification notification = new Notification();
-        notification.setUser(user);
-        notification.setTitle(title);
-        notification.setMessage(message);
-        notification.setType(type);
-        notification.setIsRead(false);
+        Notification notification = Notification.builder()
+                .user(user)
+                .title(title)
+                .message(message)
+                .type(type)
+                .isRead(false)
+                .build();
 
         notification = notificationRepository.save(notification);
         sendNotificationEmail(user.getEmail(), user.getFullName(), title, message, type);
+
         return notification;
     }
 

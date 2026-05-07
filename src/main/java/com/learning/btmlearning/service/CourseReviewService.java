@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,11 +52,13 @@ public class CourseReviewService {
             throw new AppException(ErrorCode.COURSE_REVIEW_ALREADY_EXISTS);
         }
 
-        CourseReview review = new CourseReview();
-        review.setCourse(course);
-        review.setUser(user);
-        review.setRating(request.getRating());
-        review.setComment(request.getComment());
+        CourseReview review = CourseReview.builder()
+                .course(course)
+                .user(user)
+                .rating(request.getRating())
+                .comment(request.getComment())
+                .createdAt(LocalDateTime.now())
+                .build();
 
         review = courseReviewRepository.save(review);
         updateCourseRatingSummary(course.getId());
@@ -94,8 +97,8 @@ public class CourseReviewService {
                 .id(review.getId())
                 .courseId(review.getCourse().getId())
                 .userId(review.getUser().getId())
-            .userFullName(review.getUser().getFullName())
-            .userAvatarUrl(review.getUser().getAvatarUrl())
+                .userFullName(review.getUser().getFullName())
+                .userAvatarUrl(review.getUser().getAvatarUrl())
                 .rating(review.getRating())
                 .comment(review.getComment())
                 .createdAt(review.getCreatedAt())

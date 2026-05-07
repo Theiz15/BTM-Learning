@@ -11,9 +11,7 @@ import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.repository.CertificateRepository;
 import com.learning.btmlearning.repository.UserRepository;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,12 +20,11 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CertificateService {
-    CertificateRepository certificateRepository;
-    UserRepository userRepository;
-    CourseService courseService;
-    NotificationService notificationService;
+    private final CertificateRepository certificateRepository;
+    private final UserRepository userRepository;
+    private final CourseService courseService;
+    private final NotificationService notificationService;
 
     @Transactional
     public CertificateResponse autoIssueCertificate(CertificateAutoIssueRequest request) {
@@ -43,10 +40,11 @@ public class CertificateService {
             throw new AppException(ErrorCode.CERTIFICATE_ALREADY_ISSUED);
         }
 
-        Certificate certificate = new Certificate();
-        certificate.setUser(user);
-        certificate.setCourse(course);
-        certificate.setCode(generateCode());
+        Certificate certificate = Certificate.builder()
+                .user(user)
+                .course(course)
+                .certCode(generateCode())
+                .build();
 
         certificate = certificateRepository.save(certificate);
 
@@ -71,6 +69,7 @@ public class CertificateService {
     @Transactional(readOnly = true)
     public CertificateVerificationResponse verifyCertificate(String code) {
         String normalizedCode = code == null ? "" : code.trim();
+
         Certificate certificate = certificateRepository.findByCodeIgnoreCaseOrCertCodeIgnoreCase(normalizedCode, normalizedCode)
                 .orElseThrow(() -> new AppException(ErrorCode.CERTIFICATE_NOT_FOUND));
 

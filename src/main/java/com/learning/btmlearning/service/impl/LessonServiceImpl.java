@@ -18,7 +18,6 @@ import com.learning.btmlearning.mapper.LessonProgressMapper;
 import com.learning.btmlearning.repository.*;
 import com.learning.btmlearning.service.LessonService;
 import com.learning.btmlearning.utils.SecurityUtil;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +38,6 @@ public class LessonServiceImpl implements LessonService {
     private final SectionRepository sectionRepository;
     private final QuizRepository quizRepository;
     private final LessonProgressRepository lessonProgressRepository;
-    private final UserRepository userRepository;
     private final LessonProgressMapper lessonProgressMapper;
     private final EnrollmentRepository enrollmentRepository;
     private final CourseRepository courseRepository;
@@ -138,7 +136,7 @@ public class LessonServiceImpl implements LessonService {
                     Lesson lesson = lessonRepository.getReferenceById(lessonId);
 
                     LessonProgress progress = new LessonProgress();
-                    progress.setUser(userRepository.findById(user.getId()).orElse(null));
+                    progress.setUser(user);
                     progress.setLesson(lesson);
                     progress.setEnrollment(findEnrollment(user.getId(), lesson.getCourse().getId()));
                     progress.setWatchedSeconds(0);
@@ -178,7 +176,13 @@ public class LessonServiceImpl implements LessonService {
         switch (lesson.getLessonType()) {
             case VIDEO   -> updateVideoProgress(progress, request, lesson);
             case DOCUMENT -> updateReadingProgress(progress, request);
-            case QUIZ    -> updateQuizProgress(progress, request);
+            case QUIZ    -> {
+                Quiz quiz = quizRepository.findByIdAndLessonId(request.getQuizId(), lesson.getId()).orElseThrow(
+                        () -> new AppException(ErrorCode.QUIZ_NOT_FOUND)
+                );
+
+                updateQuizProgress(progress, request, quiz);
+            }
         }
 
         progress.setLastWatchedAt(LocalDateTime.now());
@@ -284,16 +288,35 @@ public class LessonServiceImpl implements LessonService {
     }
 
     private void updateReadingProgress(LessonProgress p, UpdateProgressRequest req) {
-        p.setStatus(ProgressStatus.COMPLETED);
-        p.setIsCompleted(true);
+            if (req == null) return;
+
+            if (Boolean.TRUE.equals(p.getIsCompleted())) return;
+
+            boolean isCompleted = false;
+
+            //Scroll percent
+            if (req.getScrollPercent() != null && req.getScrollPercent() >= 80) {
+                isCompleted = true;
+            }
+
+            // 4. Update status
+            if (isCompleted) {
+                p.setStatus(ProgressStatus.COMPLETED);
+                p.setIsCompleted(true);
+            } else {
+                p.setStatus(ProgressStatus.IN_PROGRESS);
+            }
     }
 
-    private void updateQuizProgress(LessonProgress p, UpdateProgressRequest req) {
+    private void updateQuizProgress(LessonProgress p, UpdateProgressRequest req, Quiz quiz) {
         if (req.getQuizScore() == null) return;
 
         p.setQuizScore(req.getQuizScore());
-        p.setStatus(ProgressStatus.COMPLETED);
-        p.setIsCompleted(true);
+
+        if (req.getQuizScore() >= quiz.getPassScore()) {
+            p.setStatus(ProgressStatus.COMPLETED);
+            p.setIsCompleted(true);
+        }
     }
 
     private void checkAndCompleteCourse(Enrollment enrollment) {

@@ -6,9 +6,8 @@ import com.learning.btmlearning.dto.response.CertificateResponse;
 import com.learning.btmlearning.dto.response.CertificateVerificationResponse;
 import com.learning.btmlearning.service.CertificateService;
 import jakarta.validation.Valid;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,28 +15,33 @@ import java.util.List;
 @RestController
 @RequestMapping("${api.prefix}/certificates")
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CertificateController {
-    CertificateService certificateService;
+    private final CertificateService certificateService;
 
     @PostMapping("/auto-issue")
-    public ApiResponse<CertificateResponse> autoIssueCertificate(@Valid @RequestBody CertificateAutoIssueRequest request) {
-        return ApiResponse.<CertificateResponse>builder()
+    public ResponseEntity<ApiResponse<CertificateResponse>> autoIssueCertificate(@Valid @RequestBody CertificateAutoIssueRequest request) {
+        ApiResponse<CertificateResponse> apiResponse = ApiResponse.<CertificateResponse>builder()
                 .result(certificateService.autoIssueCertificate(request))
                 .build();
+
+        return ResponseEntity.ok(apiResponse);
     }
 
     @GetMapping("/verify")
-    public ApiResponse<CertificateVerificationResponse> verifyCertificate(@RequestParam String code) {
-        return ApiResponse.<CertificateVerificationResponse>builder()
+    public ResponseEntity<ApiResponse<CertificateVerificationResponse>> verifyCertificate(@RequestParam String code) {
+        ApiResponse<CertificateVerificationResponse> apiResponse = ApiResponse.<CertificateVerificationResponse>builder()
                 .result(certificateService.verifyCertificate(code))
                 .build();
+
+        return ResponseEntity.ok(apiResponse);
     }
 
     @GetMapping
-    public ApiResponse<List<CertificateResponse>> getAllCertificates() {
-        return ApiResponse.<List<CertificateResponse>>builder()
+    public ResponseEntity<ApiResponse<List<CertificateResponse>>> getAllCertificates() {
+        ApiResponse<List<CertificateResponse>> apiResponse = ApiResponse.<List<CertificateResponse>>builder()
                 .result(certificateService.getAllCertificates())
                 .build();
+
+        return ResponseEntity.ok(apiResponse);
     }
 }

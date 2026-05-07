@@ -75,7 +75,7 @@ public class CourseController {
     }
 
     @DeleteMapping("/course/{courseId}")
-        @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteCourse(@PathVariable Long courseId) {
         courseService.deleteCourse(courseId);
 
@@ -117,7 +117,7 @@ public class CourseController {
     }
 
     @PatchMapping("/{id}/approve")
-        @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> approveCourse(@PathVariable Long id) {
         courseService.approveCourse(id);
 
@@ -129,7 +129,7 @@ public class CourseController {
     }
 
     @PatchMapping("/{id}/reject")
-        @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> rejectCourse(@PathVariable Long id) {
         courseService.rejectCourse(id);
 
@@ -140,7 +140,7 @@ public class CourseController {
         return ResponseEntity.ok(apiResponse);
     }
     @PatchMapping("/courses/{courseId}/discount")
-        @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")
     public ApiResponse<CourseSummaryResponse> setCourseDiscount(
             @PathVariable Long courseId,
             @RequestBody CourseDiscountRequest request) {
@@ -149,6 +149,4 @@ public class CourseController {
                 .result(courseService.updateCourseDiscount(courseId, request))
                 .build();
     }
-
-
 }

@@ -40,6 +40,26 @@ public class FileUploadController {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @PostMapping("/files/{courseId}")
+    public ResponseEntity<ApiResponse<FileUploadResponse>> uploadThumbnail(MultipartFile file, @PathVariable Long courseId) throws IOException {
+        ApiResponse<FileUploadResponse> apiResponse = ApiResponse.<FileUploadResponse>builder()
+                .message("Upload thumbnail successful")
+                .result(cloudinaryService.uploadCourseThumbnail(file, courseId))
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @PostMapping("/uploadVideo/{lessonId}")
+    public ResponseEntity<ApiResponse<FileUploadResponse>> uploadVideo(MultipartFile file, @PathVariable Long lessonId) throws IOException {
+        ApiResponse<FileUploadResponse> apiResponse = ApiResponse.<FileUploadResponse>builder()
+                .message("Upload video successful")
+                .result(cloudinaryService.uploadVideo(file, lessonId))
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
     @PostMapping(value = "/upload")
     public ResponseEntity<ApiResponse<UploadDocumentResponse>> uploadPdf(@ModelAttribute MultipartFile file) throws IOException {
             UploadDocumentResponse result = fileUploadService.uploadPdf(file);

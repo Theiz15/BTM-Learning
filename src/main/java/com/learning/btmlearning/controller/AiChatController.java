@@ -2,8 +2,10 @@ package com.learning.btmlearning.controller;
 
 import com.learning.btmlearning.dto.request.AiChatMessageRequest;
 import com.learning.btmlearning.dto.request.CreateAiSessionRequest;
-import com.learning.btmlearning.dto.response.*;
-import com.learning.btmlearning.entity.AiChatSession;
+import com.learning.btmlearning.dto.response.AiChatMessageResponse;
+import com.learning.btmlearning.dto.response.AiChatSessionResponse;
+import com.learning.btmlearning.dto.response.ApiResponse;
+import com.learning.btmlearning.dto.response.CourseSummaryResponse;
 import com.learning.btmlearning.service.impl.AiChatService;
 import com.learning.btmlearning.service.impl.RecommendationService;
 import com.learning.btmlearning.utils.SecurityUtil;

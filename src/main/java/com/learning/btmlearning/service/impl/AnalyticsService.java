@@ -58,7 +58,7 @@ public class AnalyticsService {
         BigDecimal totalRevenue = payments.stream()
                 .filter(this::isSuccessfulPayment)
                 .map(Payment::getAmount)
-                .filter(amount -> amount != null)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         YearMonth currentMonth = YearMonth.now();
@@ -66,7 +66,7 @@ public class AnalyticsService {
                 .filter(this::isSuccessfulPayment)
                 .filter(payment -> YearMonth.from(resolvePaymentDateTime(payment)).equals(currentMonth))
                 .map(Payment::getAmount)
-                .filter(amount -> amount != null)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         long publishedCourses = courses.stream()

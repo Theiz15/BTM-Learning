@@ -19,9 +19,11 @@ import org.mapstruct.*;
         }
 )
 public interface CourseMapper {
+    @Mapping(target = "slug", ignore = true)
     Course toCourse (CourseRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "slug", ignore = true)
     void updateCourse (@MappingTarget Course course, CourseRequest request);
 
     @Mapping(source = "sections", target = "sections", qualifiedByName = "toSectionResponse")

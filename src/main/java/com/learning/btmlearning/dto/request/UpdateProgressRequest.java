@@ -7,8 +7,10 @@ import lombok.Data;
 public class UpdateProgressRequest {
     private Long lessonId;
     private Long progressId;
+    private Long quizId;
     private Integer watchedPercent;
     @NotNull(message = "Not null")
     private int watchedSeconds = 0;
     private Double quizScore;
+    private Double scrollPercent;
 }

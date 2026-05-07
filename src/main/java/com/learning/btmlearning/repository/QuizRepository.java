@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface QuizRepository extends JpaRepository<Quiz, Long> {
     Optional<Quiz> findFirstByLessonIdOrderByIdDesc(Long lessonId);
     Optional<Quiz> findFirstByLessonIsNullAndTitleIgnoreCaseOrderByIdDesc(String title);
+    Optional<Quiz> findByIdAndLessonId(Long id, Long lessonId);
 }

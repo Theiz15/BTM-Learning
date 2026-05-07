@@ -143,6 +143,7 @@ public class AiChatService implements IAiChatService {
     @Transactional
     public SseEmitter streamMessage(String sessionToken ,String userContent) {
         AiChatSession session = getAndVerifySession(sessionToken);
+
         AiMessage userMessage = AiMessage.builder()
                 .session(session)
                 .role(AiRole.USER)

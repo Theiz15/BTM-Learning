@@ -7,26 +7,22 @@ import com.learning.btmlearning.entity.Category;
 import com.learning.btmlearning.exception.AppException;
 import com.learning.btmlearning.exception.ErrorCode;
 import com.learning.btmlearning.repository.CategoryRepository;
-import lombok.AccessLevel;
+import com.learning.btmlearning.utils.RegexPatternUtil;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CategoryService {
-    private static final Pattern NON_LATIN = Pattern.compile("[^a-z0-9-]");
-    private static final Pattern WHITESPACE = Pattern.compile("[\\s]+");
-
-    CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
 
     @Transactional
     public CategoryResponse createCategory(CategoryCreationRequest request) {
@@ -117,12 +113,14 @@ public class CategoryService {
         Category parentCategory = findCategory(parentId);
 
         if (currentCategoryId != null && currentCategoryId.equals(parentCategory.getId())) {
+            log.error("Category with id {} already exists", currentCategoryId);
             throw new AppException(ErrorCode.INVALID_KEY);
         }
 
         Category cursor = parentCategory;
         while (cursor != null) {
             if (currentCategoryId != null && currentCategoryId.equals(cursor.getId())) {
+                log.error("Category with id {} already exists", currentCategoryId);
                 throw new AppException(ErrorCode.INVALID_KEY);
             }
             cursor = cursor.getParentCategory();
@@ -161,11 +159,11 @@ public class CategoryService {
 
     private String toSlug(String input) {
         String safe = input == null ? "" : input;
-        String nowhitespace = WHITESPACE.matcher(safe.trim()).replaceAll("-");
+        String nowhitespace = RegexPatternUtil.WHITESPACE.matcher(safe.trim()).replaceAll("-");
         String normalized = Normalizer.normalize(nowhitespace, Normalizer.Form.NFD);
         String withoutDiacritics = normalized.replaceAll("\\p{M}+", "");
         String slug = withoutDiacritics.toLowerCase(Locale.ROOT);
-        slug = NON_LATIN.matcher(slug).replaceAll("");
+        slug = RegexPatternUtil.NON_LATIN.matcher(slug).replaceAll("");
         slug = slug.replaceAll("-+", "-");
         slug = slug.replaceAll("^-+|-+$", "");
         return slug.isBlank() ? "category" : slug;

@@ -52,7 +52,7 @@ public class CloudinaryService {
         }
     }
 
-    public Map<String, Object> uploadCourseThumbnail(MultipartFile file, Long courseId) throws IOException {
+    public FileUploadResponse uploadCourseThumbnail(MultipartFile file, Long courseId) throws IOException {
         validateImageFile(file);
 
         Map uploadParams = ObjectUtils.asMap(
@@ -68,13 +68,18 @@ public class CloudinaryService {
         );
 
         Map result = cloudinary.uploader().upload(file.getBytes(), uploadParams);
-        return Map.of(
-                "secure_url", result.get("secure_url"),
-                "public_id", result.get("public_id")
-        );
+
+        FileUpload fileUpload = FileUpload.builder()
+                .folderName(result.get("folder").toString())
+                .filePath(result.get("secure_url").toString())
+                .fileType(result.get("resource_type").toString())
+                .fileName(result.get("public_id").toString())
+                .build();
+
+        return fileUploadMapper.toFileUploadResponse(fileUploadRepository.save(fileUpload));
     }
 
-    public Map<String, Object> uploadVideo(MultipartFile file, Long lessonId) throws IOException {
+    public FileUploadResponse uploadVideo(MultipartFile file, Long lessonId) throws IOException {
         if (file.getContentType() == null || !file.getContentType().startsWith("video/")) {
             throw new IllegalArgumentException("File phải là video");
         }
@@ -88,11 +93,15 @@ public class CloudinaryService {
         );
 
         Map result = cloudinary.uploader().upload(file.getBytes(), uploadParams);
-        return Map.of(
-                "secure_url", result.get("secure_url"),     // link HLS m3u8
-                "public_id", result.get("public_id"),
-                "duration", result.get("duration")
-        );
+
+        FileUpload fileUpload = FileUpload.builder()
+                .fileName(result.get("public_id").toString())
+                .fileType(result.get("resource_type").toString())
+                .filePath(result.get("secure_url").toString())
+                .folderName(result.get("folder").toString())
+                .build();
+
+        return fileUploadMapper.toFileUploadResponse(fileUploadRepository.save(fileUpload));
     }
 
     @Transactional

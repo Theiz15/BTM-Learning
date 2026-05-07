@@ -55,4 +55,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     @EntityGraph(attributePaths = {"instructor", "category"})
     List<Course> findByStatusOrderByCreateAtDesc(CourseStatus status);
+
+    Boolean existsBySlug(String slug);
+    Boolean existsBySlugAndIdNot(String slug, Long id);
 }
