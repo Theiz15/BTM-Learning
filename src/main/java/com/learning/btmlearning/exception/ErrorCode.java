@@ -62,6 +62,7 @@ public enum ErrorCode {
     ENROLLMENT_CANNOT_REACTIVATE(1053, "Can only reactivate cancelled enrollment", HttpStatus.BAD_REQUEST),
     COURSE_NOT_PENDING(1054, "Course is not in PENDING status", HttpStatus.BAD_REQUEST),
     PAYMENT_NOT_FOUND(1055, "Payment not found", HttpStatus.NOT_FOUND),
+    RATE_LIMIT(1057, "Rate limit exceeded", HttpStatus.BAD_REQUEST),
     USER_NOT_ENROLLED(1056, "User is not enrolled in this course", HttpStatus.BAD_REQUEST);
 
     ErrorCode(int errorCode, String errorMsg, HttpStatusCode statusCode) {

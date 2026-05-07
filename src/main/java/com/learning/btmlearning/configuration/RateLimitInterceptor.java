@@ -36,7 +36,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                 return true;
             }
 
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(ErrorCode.RATE_LIMIT);
 
         } catch (Exception e) {
             return true;
